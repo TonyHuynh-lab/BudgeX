@@ -1,10 +1,13 @@
 import Versions from './components/Versions'
 import electronLogo from './assets/electron.svg'
 import { Button } from './components/ui/button'
+import { useEffect } from 'react'
 
 function App(): React.JSX.Element {
   const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-
+  useEffect(() => {
+      window.api.transactions.getAll().then(console.log)
+      }, [])
   return (
     <>
       <Button> Click Me! </Button>

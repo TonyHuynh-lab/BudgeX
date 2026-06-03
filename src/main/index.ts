@@ -3,6 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { runMigrations } from './db'
+import { registerHandlers } from './ipc/handlers'
 
 function createWindow(): void {
   // Create the browser window.
@@ -45,6 +46,9 @@ app.whenReady().then(() => {
 
   // Call migrations
   runMigrations()
+  // Register IPC handlers
+  registerHandlers()
+
   // Default open or close DevTools by F12 in development
   // and ignore CommandOrControl + R in production.
   // see https://github.com/alex8088/electron-toolkit/tree/master/packages/utils

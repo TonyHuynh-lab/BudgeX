@@ -1,38 +1,25 @@
-import Versions from './components/Versions'
-import electronLogo from './assets/electron.svg'
-import { Button } from './components/ui/button'
-import { useEffect } from 'react'
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom'
+import Layout from './components/Layout'
+import Dashboard from './pages/Dashboard'
+import Transactions from './pages/Transactions'
+import Subscriptions from './pages/Subscriptions'
+import Stocks from './pages/Stocks'
+import Savings from './pages/Savings'
 
 function App(): React.JSX.Element {
-  const ipcHandle = (): void => window.electron.ipcRenderer.send('ping')
-  useEffect(() => {
-      window.api.transactions.getAll().then(console.log)
-      }, [])
   return (
-    <>
-      <Button> Click Me! </Button>
-      <div className="creator">Powered by electron-vite</div>
-      <div className="text">
-        Build an Electron app with <span className="react">React</span>
-        &nbsp;and <span className="ts">TypeScript</span>
-      </div>
-      <p className="tip">
-        Please try pressing <code>F12</code> to open the devTool
-      </p>
-      <div className="actions">
-        <div className="action">
-          <a href="https://electron-vite.org/" target="_blank" rel="noreferrer">
-            Documentation
-          </a>
-        </div>
-        <div className="action">
-          <a target="_blank" rel="noreferrer" onClick={ipcHandle}>
-            Send IPC
-          </a>
-        </div>
-      </div>
-      <Versions></Versions>
-    </>
+    <HashRouter>
+      <Routes>
+        <Route path="/" element={<Layout />}>
+          <Route index element={<Navigate to="/dashboard" replace />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="transactions" element={<Transactions />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="stocks" element={<Stocks />} />
+          <Route path="savings" element={<Savings />} />
+        </Route>
+      </Routes>
+    </HashRouter>
   )
 }
 

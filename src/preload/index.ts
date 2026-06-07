@@ -32,8 +32,23 @@ const api = {
     create: (data) => ipcRenderer.invoke('savingsGoals:create', data),
     update: (data) => ipcRenderer.invoke('savingsGoals:update', data),
     delete: (id) => ipcRenderer.invoke('savingsGoals:delete', id)
+  },
+  priceSnapshots: {
+    getAll: () => ipcRenderer.invoke('priceSnapshots:getAll'),
+    upsert: (data) => ipcRenderer.invoke('priceSnapshots:upsert', data)
+  },
+  stockPrices: {
+    fetch: (tickers: string[]) => ipcRenderer.invoke('stockPrices:fetch', tickers),
   }
 }
+
+declare global {
+  interface Window {
+    electron: any,
+    api: any
+  }
+};
+
 
 if (process.contextIsolated) {
   try {

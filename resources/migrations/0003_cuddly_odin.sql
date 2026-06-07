@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `ticker_date` ON `price_snapshots` (`ticker`,`date`);

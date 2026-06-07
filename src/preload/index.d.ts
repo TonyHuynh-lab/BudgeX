@@ -3,8 +3,9 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 type Account = { id: number; name: string; type: string; currency: string; openingBalance: number }
 type Transaction = { id: number; date: string; amount: number; category: string; description: string | null; accountId: number | null }
 type Subscription = { id: number; name: string; amount: number; billingCycle: string; startDate: string; category: string | null }
-type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string }
+type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string; currentPrice: number }
 type SavingsGoal = { id: number; name: string; targetAmount: number; currentAmount: number; targetDate: string | null }
+type PriceSnapshot = { id: number; ticker: string; price: number; date: string }
 
 declare global {
   interface Window {
@@ -39,6 +40,13 @@ declare global {
         create: (data: Omit<SavingsGoal, 'id'>) => Promise<SavingsGoal[]>
         update: (data: SavingsGoal) => Promise<SavingsGoal[]>
         delete: (id: number) => Promise<void>
+      }
+      priceSnapshots: {
+        getAll: () => Promise<PriceSnapshot[]>
+        upsert: (data: Omit<PriceSnapshot, 'id'>) => Promise<void>
+      }
+      stockPrices: {
+        fetch: (tickers: string[]) => Promise<Record<string, number>>
       }
     }
   }

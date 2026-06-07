@@ -1,4 +1,4 @@
-import { int, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { int, real, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 export const accounts = sqliteTable('accounts', {
   id: int().primaryKey({ autoIncrement: true }),
@@ -31,7 +31,8 @@ export const stockPositions = sqliteTable('stock_positions', {
   ticker: text().notNull(),
   shares: real().notNull(),
   avgCostBasis: real().notNull(),
-  purchaseDate: text().notNull()
+  purchaseDate: text().notNull(),
+  currentPrice: real().notNull().default(0)
 })
 
 export const savingsGoals = sqliteTable('savings_goals', {
@@ -41,3 +42,10 @@ export const savingsGoals = sqliteTable('savings_goals', {
   currentAmount: real().notNull().default(0),
   targetDate: text()
 })
+
+export const priceSnapshots = sqliteTable('price_snapshots', {
+  id: int().primaryKey({ autoIncrement: true }),
+  ticker: text().notNull(),
+  price: real().notNull(),
+  date: text().notNull(),
+}, (t) => [uniqueIndex('ticker_date').on(t.ticker, t.date)])

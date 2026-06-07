@@ -1,7 +1,10 @@
 import { ipcMain } from 'electron'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { db } from '../db'
-import { accounts, transactions, subscriptions, stockPositions, savingsGoals } from '../db/schema'
+import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots } from '../db/schema'
+import yahooFinanceModule from 'yahoo-finance2'
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const yahooFinance = (yahooFinanceModule as any).default ?? yahooFinanceModule
 
 export function registerHandlers(): void {
   // Accounts
@@ -15,7 +18,7 @@ export function registerHandlers(): void {
   )
 
   // Transactions
-  ipcMain.handle('transactions:getAll', () => db.select().from(transactions))
+  ipcMain.handle('transactions:getAll', () => db.select().from(transactions).orderBy(desc(transactions.date)))
   ipcMain.handle('transactions:create', (_, data) => db.insert(transactions).values(data).returning())
   ipcMain.handle('transactions:update', (_, { id, ...data }) =>
     db.update(transactions).set(data).where(eq(transactions.id, id)).returning()
@@ -53,4 +56,32 @@ export function registerHandlers(): void {
   ipcMain.handle('savingsGoals:delete', (_, id) =>
     db.delete(savingsGoals).where(eq(savingsGoals.id, id)).run()
   )
+
+  // inside registerHandlers():
+  ipcMain.handle('priceSnapshots:getAll', () => db.select().from(priceSnapshots))
+  ipcMain.handle('priceSnapshots:upsert', (_, data: { ticker: string; price: number; date: string }) =>
+  db.insert(priceSnapshots)
+    .values(data)
+    .onConflictDoUpdate({ target: [priceSnapshots.ticker, priceSnapshots.date], set: { price: data.price } })
+    .run()
+  )
+
+  // Additional handlers for fetching stock prices from Yahoo Finance
+  ipcMain.handle('stockPrices:fetch', async (_, tickers: string[]) => {
+    const results: Record<string, number> = {}
+    await Promise.all(
+      tickers.map(async (ticker) => {
+        try {
+          const yf = new yahooFinance({ suppressNotices: ['yahooSurvey'] });
+          const quote = await yf.quote(ticker);
+          if (quote.regularMarketPrice) {
+            results[ticker] = quote.regularMarketPrice
+          }
+        } catch (error) {
+          console.error(`Error fetching price for ${ticker}:`, error)
+        }
+      })
+    )
+    return results
+  })
 }

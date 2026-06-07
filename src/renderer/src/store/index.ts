@@ -125,7 +125,8 @@ type StockPosition = {
     ticker: string,
     shares: number,
     avgCostBasis: number,
-    purchaseDate: string
+    purchaseDate: string,
+    currentPrice: number
 }
 
 type StockPositionsStore = {
@@ -194,5 +195,32 @@ export const useSavingsGoals = create<SavingsGoalsStore>((set) => ({
     delete: async (id) => {
         await window.api.savingsGoals.delete(id)
         set((state) => ({ savingsGoals: state.savingsGoals.filter((s) => s.id !== id) }))
+    }
+}))
+
+// PriceSnapshot type definition
+type PriceSnapshot = {
+    id: number,
+    ticker: string,
+    price: number,
+    date: string
+}
+
+type PriceSnapshotsStore = {
+    priceSnapshots: PriceSnapshot[]
+    load: () => Promise<void>
+    upsert: (data: Omit<PriceSnapshot, 'id'>) => Promise<void>
+}
+
+export const usePriceSnapshots = create<PriceSnapshotsStore>((set) => ({
+    priceSnapshots: [],
+    load: async () => {
+      const data = await window.api.priceSnapshots.getAll()
+      set({ priceSnapshots: data })
+    },
+    upsert: async (data) => {
+      await window.api.priceSnapshots.upsert(data)
+      const updated = await window.api.priceSnapshots.getAll()
+      set({ priceSnapshots: updated })
     }
 }))

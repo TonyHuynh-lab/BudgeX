@@ -5,7 +5,13 @@ import tailwind from '@tailwindcss/vite'
 
 
 export default defineConfig({
-  main: {},
+  main: {
+    build: {
+      rollupOptions: {
+        external: ['yahoo-finance2']
+      }
+    }
+  },
   preload: {},
   renderer: {
     resolve: {

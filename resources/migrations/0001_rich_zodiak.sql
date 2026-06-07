@@ -1,0 +1,1 @@
+ALTER TABLE `stock_positions` ADD `currentPrice` real DEFAULT 0 NOT NULL;

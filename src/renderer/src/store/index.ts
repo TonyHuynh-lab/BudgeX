@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 // Transaction type definition
-type Transaction = {
+export type Transaction = {
   id: number
   date: string
   amount: number
@@ -41,18 +41,84 @@ export const useTransactions = create<TransactionsStore>((set) => ({
 }))
 
 // Account type definition
-type Account = {
+export type Account = {
   id: number
   name: string
   type: string
   currency: string
   openingBalance: number
+  closed: boolean
+  cashbackRate: number
 }
+
+// Reserved transaction category marking a credit payment funded by that account's own
+// cashback balance, instead of a transfer from another account.
+export const CASHBACK_REDEMPTION_CATEGORY = 'Cashback Redemption'
+
+// For checking/savings this is the available balance (positive = cash on hand).
+// For credit accounts this is the amount owed (charges increase it, payments decrease it) —
+// callers computing a net total across mixed account types must subtract credit balances.
+export function getAccountBalance(account: Account, transactions: Transaction[]): number {
+  return account.openingBalance + transactions
+    .filter((t) => t.accountId === account.id)
+    .reduce((sum, t) => sum + t.amount, 0)
+}
+
+// CashbackRate type definition — a per-account, per-category override of accounts.cashbackRate
+export type CashbackRate = {
+  id: number
+  accountId: number
+  category: string
+  rate: number
+}
+
+// Cashback balance for a credit account: each charge earns its category's rate (falling back
+// to the account's default cashbackRate), minus whatever has already been redeemed to pay
+// down the card (see CASHBACK_REDEMPTION_CATEGORY).
+export function getCashbackBalance(account: Account, transactions: Transaction[], cashbackRates: CashbackRate[]): number {
+  const rateByCategory = new Map(
+    cashbackRates.filter((r) => r.accountId === account.id).map((r) => [r.category, r.rate])
+  )
+  return transactions
+    .filter((t) => t.accountId === account.id)
+    .reduce((sum, t) => {
+      if (t.amount > 0) {
+        const rate = rateByCategory.get(t.category) ?? account.cashbackRate
+        return sum + t.amount * (rate / 100)
+      }
+      if (t.category === CASHBACK_REDEMPTION_CATEGORY) return sum + t.amount
+      return sum
+    }, 0)
+}
+
+type CashbackRatesStore = {
+  cashbackRates: CashbackRate[]
+  load: () => Promise<void>
+  upsert: (data: Omit<CashbackRate, 'id'>) => Promise<void>
+  delete: (id: number) => Promise<void>
+}
+
+export const useCashbackRates = create<CashbackRatesStore>((set) => ({
+  cashbackRates: [],
+  load: async () => {
+    const data = await window.api.cashbackRates.getAll()
+    set({ cashbackRates: data })
+  },
+  upsert: async (data) => {
+    await window.api.cashbackRates.upsert(data)
+    const updated = await window.api.cashbackRates.getAll()
+    set({ cashbackRates: updated })
+  },
+  delete: async (id) => {
+    await window.api.cashbackRates.delete(id)
+    set((state) => ({ cashbackRates: state.cashbackRates.filter((r) => r.id !== id) }))
+  }
+}))
 
 type AccountsStore = {
   accounts: Account[]
   load: () => Promise<void>
-  create: (data: Omit<Account, 'id'>) => Promise<void>
+  create: (data: Omit<Account, 'id' | 'closed'>) => Promise<void>
   update: (data: Account) => Promise<void>
   delete: (id: number) => Promise<void>
 }

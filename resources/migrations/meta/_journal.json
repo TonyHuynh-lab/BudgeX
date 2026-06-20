@@ -29,6 +29,27 @@
       "when": 1780764577635,
       "tag": "0003_cuddly_odin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1781981627009,
+      "tag": "0004_woozy_shard",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1781982717421,
+      "tag": "0005_hard_absorbing_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1781983679709,
+      "tag": "0006_plain_lenny_balinger",
+      "breakpoints": true
     }
   ]
 }

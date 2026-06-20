@@ -5,8 +5,17 @@ export const accounts = sqliteTable('accounts', {
   name: text().notNull(),
   type: text().notNull(), // 'checking' | 'savings' | 'credit'
   currency: text().notNull().default('USD'),
-  openingBalance: real().notNull().default(0)
+  openingBalance: real().notNull().default(0),
+  closed: int({ mode: 'boolean' }).notNull().default(false),
+  cashbackRate: real().notNull().default(0) // default percent, credit accounts only (e.g. 2 = 2%)
 })
+
+export const cashbackRates = sqliteTable('cashback_rates', {
+  id: int().primaryKey({ autoIncrement: true }),
+  accountId: int().notNull().references(() => accounts.id),
+  category: text().notNull(),
+  rate: real().notNull().default(0) // percent, overrides accounts.cashbackRate for this category
+}, (t) => [uniqueIndex('account_category').on(t.accountId, t.category)])
 
 export const transactions = sqliteTable('transactions', {
   id: int().primaryKey({ autoIncrement: true }),

@@ -1,11 +1,12 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
-type Account = { id: number; name: string; type: string; currency: string; openingBalance: number }
+type Account = { id: number; name: string; type: string; currency: string; openingBalance: number; closed: boolean; cashbackRate: number }
 type Transaction = { id: number; date: string; amount: number; category: string; description: string | null; accountId: number | null }
 type Subscription = { id: number; name: string; amount: number; billingCycle: string; startDate: string; category: string | null }
 type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string; currentPrice: number }
 type SavingsGoal = { id: number; name: string; targetAmount: number; currentAmount: number; targetDate: string | null }
 type PriceSnapshot = { id: number; ticker: string; price: number; date: string }
+type CashbackRate = { id: number; accountId: number; category: string; rate: number }
 
 declare global {
   interface Window {
@@ -13,7 +14,7 @@ declare global {
     api: {
       accounts: {
         getAll: () => Promise<Account[]>
-        create: (data: Omit<Account, 'id'>) => Promise<Account[]>
+        create: (data: Omit<Account, 'id' | 'closed'>) => Promise<Account[]>
         update: (data: Account) => Promise<Account[]>
         delete: (id: number) => Promise<void>
       }
@@ -44,6 +45,11 @@ declare global {
       priceSnapshots: {
         getAll: () => Promise<PriceSnapshot[]>
         upsert: (data: Omit<PriceSnapshot, 'id'>) => Promise<void>
+      }
+      cashbackRates: {
+        getAll: () => Promise<CashbackRate[]>
+        upsert: (data: Omit<CashbackRate, 'id'>) => Promise<void>
+        delete: (id: number) => Promise<void>
       }
       stockPrices: {
         fetch: (tickers: string[]) => Promise<Record<string, number>>

@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useTransactions } from '../store/index'
+import { useTransactions, useAccounts, useCashbackRates, getAccountBalance, getCashbackBalance, CASHBACK_REDEMPTION_CATEGORY } from '../store/index'
 import { Button } from '../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Checkbox } from '../components/ui/checkbox'
 import { PieChart, Pie, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 
 const CATEGORIES = [
@@ -19,27 +18,147 @@ const COLORS = ['#0088FE','#00C49F','#FFBB28','#FF8042','#A28FE0','#FF6B6B','#4E
 
 export default function Transactions(): React.JSX.Element {
     const { transactions, load, create, delete: deleteTransaction } = useTransactions()
+    const { accounts, load: loadAccounts, create: createAccount, update: updateAccount, delete: deleteAccount } = useAccounts()
+    const { cashbackRates, load: loadCashbackRates, upsert: upsertCashbackRate, delete: deleteCashbackRate } = useCashbackRates()
     const [open, setOpen] = useState(false)
-    const [form, setForm] = useState({ date: '', amount: '', category: '', description: '', isExpense: true })
+    const [form, setForm] = useState({ date: '', amount: '', category: '', description: '', kind: 'expense', accountId: '', payFrom: '' })
     const [chartFilter, setChartFilter] = useState<'expense' | 'all'>('expense')
+    const [selectedAccountId, setSelectedAccountId] = useState('all')
+    const [accountOpen, setAccountOpen] = useState(false)
+    const [accountForm, setAccountForm] = useState({ name: '', type: 'checking', currency: 'USD', openingBalance: '', cashbackRate: '' })
+    const [editCashbackOpen, setEditCashbackOpen] = useState(false)
+    const [cashbackRateInput, setCashbackRateInput] = useState('')
+    const [newCategoryRate, setNewCategoryRate] = useState({ category: '', rate: '' })
 
-    useEffect(() => { load() }, [])
+    useEffect(() => { load(); loadAccounts(); loadCashbackRates() }, [])
 
     const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault()
+        const creditAccount = accounts.find((a) => a.id === Number(form.accountId))
+        const amount = Math.abs(parseFloat(form.amount))
+
+        if (form.kind === 'payment') {
+        if (!form.payFrom) {
+            window.alert('Please select where this payment is coming from.')
+            return
+        }
+        if (form.payFrom === 'cashback') {
+            const available = creditAccount ? getCashbackBalance(creditAccount, transactions, cashbackRates) : 0
+            if (amount > available) {
+            window.alert(`This account only has $${available.toFixed(2)} of cashback available.`)
+            return
+            }
+            await create({
+            date: form.date,
+            amount: -amount,
+            category: CASHBACK_REDEMPTION_CATEGORY,
+            description: 'Paid with cashback',
+            accountId: Number(form.accountId),
+            })
+        } else {
+            const fundingAccount = accounts.find((a) => a.id === Number(form.payFrom))
+            await create({
+            date: form.date,
+            amount: -amount,
+            category: 'Credit Card Payment',
+            description: `Payment from ${fundingAccount?.name ?? ''}`,
+            accountId: Number(form.accountId),
+            })
+            await create({
+            date: form.date,
+            amount: -amount,
+            category: 'Credit Card Payment',
+            description: `Payment to ${creditAccount?.name ?? ''}`,
+            accountId: Number(form.payFrom),
+            })
+        }
+        } else {
+        const isReduction = form.kind === 'expense'
         await create({
-        date: form.date,
-        amount: form.isExpense ? -Math.abs(parseFloat(form.amount)) : Math.abs(parseFloat(form.amount)),
-        category: form.category,
-        description: form.description || null,
-        accountId: null,
+            date: form.date,
+            amount: isReduction ? -amount : amount,
+            category: form.category,
+            description: form.description || null,
+            accountId: Number(form.accountId),
         })
-        setForm({ date: '', amount: '', category: '', description: '', isExpense: true })
+        }
+        setForm({ date: '', amount: '', category: '', description: '', kind: 'expense', accountId: '', payFrom: '' })
         setOpen(false)
     }
 
+    const handleAccountSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        await createAccount({
+        name: accountForm.name,
+        type: accountForm.type,
+        currency: accountForm.currency,
+        openingBalance: parseFloat(accountForm.openingBalance) || 0,
+        cashbackRate: parseFloat(accountForm.cashbackRate) || 0,
+        })
+        setAccountForm({ name: '', type: 'checking', currency: 'USD', openingBalance: '', cashbackRate: '' })
+        setAccountOpen(false)
+    }
+
+    const openAccounts = accounts.filter((a) => !a.closed)
+    const fundingAccounts = openAccounts.filter((a) => a.type === 'checking' || a.type === 'savings')
+    const selectedAccount = accounts.find((a) => a.id === Number(selectedAccountId))
+    const isCreditAccount = selectedAccount?.type === 'credit'
+
+    const formAccount = accounts.find((a) => a.id === Number(form.accountId))
+    const formAccountCashback = formAccount ? getCashbackBalance(formAccount, transactions, cashbackRates) : 0
+
+    const handleToggleClosed = async () => {
+        if (!selectedAccount) return
+        await updateAccount({ ...selectedAccount, closed: !selectedAccount.closed })
+    }
+
+    const handleEditCashbackSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+        e.preventDefault()
+        if (!selectedAccount) return
+        await updateAccount({ ...selectedAccount, cashbackRate: parseFloat(cashbackRateInput) || 0 })
+        setEditCashbackOpen(false)
+    }
+
+    const accountCashbackRates = cashbackRates.filter((r) => r.accountId === selectedAccount?.id)
+
+    const handleAddCategoryRate = async () => {
+        if (!selectedAccount || !newCategoryRate.category) return
+        await upsertCashbackRate({
+        accountId: selectedAccount.id,
+        category: newCategoryRate.category,
+        rate: parseFloat(newCategoryRate.rate) || 0,
+        })
+        setNewCategoryRate({ category: '', rate: '' })
+    }
+
+    const handleDeleteAccount = async () => {
+        if (!selectedAccount) return
+        const count = transactions.filter((t) => t.accountId === selectedAccount.id).length
+        const message = count > 0
+        ? `${selectedAccount.name} has ${count} transaction${count === 1 ? '' : 's'} linked to it. Deleting the account will not delete those transactions. Continue?`
+        : `Delete ${selectedAccount.name}?`
+        if (!window.confirm(message)) return
+        await deleteAccount(selectedAccount.id)
+        setSelectedAccountId('all')
+    }
+
+    const currentBalance = selectedAccountId === 'all'
+        ? openAccounts.reduce((sum, a) => {
+            const balance = getAccountBalance(a, transactions)
+            return sum + (a.type === 'credit' ? -balance : balance)
+        }, 0)
+        : selectedAccount ? getAccountBalance(selectedAccount, transactions) : 0
+
+    const balanceLabel = selectedAccountId === 'all'
+        ? 'Total Balance'
+        : `${selectedAccount?.name ?? ''} — ${isCreditAccount ? 'Current Balance' : 'Available Balance'}`
+
+    const filteredTransactions = selectedAccountId === 'all'
+        ? transactions
+        : transactions.filter((t) => t.accountId === Number(selectedAccountId))
+
     const chartData = Object.entries(
-    transactions
+    filteredTransactions
         .filter((t) => chartFilter === 'expense' ? t.amount < 0 : true)
         .reduce((acc, t) => {
             acc[t.category] = (acc[t.category] || 0) + Math.abs(t.amount)
@@ -68,19 +187,69 @@ export default function Transactions(): React.JSX.Element {
                     onChange={(e) => setForm({ ...form, date: e.target.value })} required />
                 </div>
                 <div className="space-y-1">
+                    <Label>Account</Label>
+                    <Select value={form.accountId} onValueChange={(v) => {
+                        const acc = accounts.find((a) => a.id === Number(v))
+                        setForm({ ...form, accountId: v, kind: acc?.type === 'credit' ? 'charge' : 'expense', payFrom: '' })
+                    }}>
+                    <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                    <SelectContent>
+                        {openAccounts.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
                     <Label htmlFor="amount">Amount</Label>
                     <Input id="amount" type="number" step="0.01" placeholder="e.g. 42.50"
                     value={form.amount}
                     onChange={(e) => setForm({ ...form, amount: e.target.value })} required />
                 </div>
-                <div className="flex items-center gap-2">
-                    <Checkbox
-                    id="isExpense"
-                    checked={form.isExpense}
-                    onCheckedChange={(checked: boolean | 'indeterminate') => setForm({ ...form, isExpense: checked === true })}
-                    />
-                    <Label htmlFor="isExpense">This is an expense</Label>
+                <div className="space-y-1">
+                    <Label>Type</Label>
+                    <div className="flex rounded-md border text-sm overflow-hidden w-fit">
+                    {(form.kind === 'charge' || form.kind === 'payment') ? (
+                        <>
+                        <button type="button"
+                            className={`px-3 py-1 transition-colors ${form.kind === 'charge' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
+                            onClick={() => setForm({ ...form, kind: 'charge' })}>
+                            Charge
+                        </button>
+                        <button type="button"
+                            className={`px-3 py-1 transition-colors ${form.kind === 'payment' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
+                            onClick={() => setForm({ ...form, kind: 'payment' })}>
+                            Payment
+                        </button>
+                        </>
+                    ) : (
+                        <>
+                        <button type="button"
+                            className={`px-3 py-1 transition-colors ${form.kind === 'expense' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
+                            onClick={() => setForm({ ...form, kind: 'expense' })}>
+                            Expense
+                        </button>
+                        <button type="button"
+                            className={`px-3 py-1 transition-colors ${form.kind === 'income' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-accent'}`}
+                            onClick={() => setForm({ ...form, kind: 'income' })}>
+                            Income
+                        </button>
+                        </>
+                    )}
+                    </div>
                 </div>
+                {form.kind === 'payment' && (
+                    <div className="space-y-1">
+                    <Label>Pay From</Label>
+                    <Select value={form.payFrom} onValueChange={(v) => setForm({ ...form, payFrom: v })}>
+                        <SelectTrigger><SelectValue placeholder="Select funding source" /></SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="cashback">Cashback (${formAccountCashback.toFixed(2)} available)</SelectItem>
+                        {fundingAccounts.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                    </div>
+                )}
+                {form.kind !== 'payment' && (
+                <>
                 <div className="space-y-1">
                     <Label>Category</Label>
                     <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
@@ -95,10 +264,163 @@ export default function Transactions(): React.JSX.Element {
                     <Input id="description" placeholder="e.g. Grocery run" value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })} />
                 </div>
+                </>
+                )}
                 <Button type="submit" className="w-full">Save</Button>
                 </form>
             </DialogContent>
             </Dialog>
+        </div>
+
+        {/* Account filter + balance */}
+        <div className="space-y-4">
+            <div className="flex items-center gap-2">
+            <Select value={selectedAccountId} onValueChange={setSelectedAccountId}>
+                <SelectTrigger className="w-56"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                <SelectItem value="all">All Accounts</SelectItem>
+                {accounts.map((a) => (
+                    <SelectItem key={a.id} value={String(a.id)}>{a.name}{a.closed ? ' (Closed)' : ''}</SelectItem>
+                ))}
+                </SelectContent>
+            </Select>
+
+            <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+                <DialogTrigger asChild>
+                <Button variant="outline">Add Account</Button>
+                </DialogTrigger>
+                <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Add Account</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAccountSubmit} className="space-y-4">
+                    <div className="space-y-1">
+                    <Label htmlFor="accountName">Name</Label>
+                    <Input id="accountName" placeholder="e.g. Main Checking" value={accountForm.name}
+                        onChange={(e) => setAccountForm({ ...accountForm, name: e.target.value })} required />
+                    </div>
+                    <div className="space-y-1">
+                    <Label>Type</Label>
+                    <Select value={accountForm.type} onValueChange={(v) => setAccountForm({ ...accountForm, type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                        <SelectItem value="checking">Checking</SelectItem>
+                        <SelectItem value="savings">Savings</SelectItem>
+                        <SelectItem value="credit">Credit</SelectItem>
+                        </SelectContent>
+                    </Select>
+                    </div>
+                    <div className="space-y-1">
+                    <Label htmlFor="currency">Currency</Label>
+                    <Input id="currency" placeholder="e.g. USD" value={accountForm.currency}
+                        onChange={(e) => setAccountForm({ ...accountForm, currency: e.target.value })} required />
+                    </div>
+                    <div className="space-y-1">
+                    <Label htmlFor="openingBalance">Opening Balance</Label>
+                    <Input id="openingBalance" type="number" step="0.01" placeholder="e.g. 1000.00"
+                        value={accountForm.openingBalance}
+                        onChange={(e) => setAccountForm({ ...accountForm, openingBalance: e.target.value })} />
+                    </div>
+                    {accountForm.type === 'credit' && (
+                    <div className="space-y-1">
+                        <Label htmlFor="cashbackRate">Cashback Rate (%)</Label>
+                        <Input id="cashbackRate" type="number" step="0.1" placeholder="e.g. 2"
+                        value={accountForm.cashbackRate}
+                        onChange={(e) => setAccountForm({ ...accountForm, cashbackRate: e.target.value })} />
+                    </div>
+                    )}
+                    <Button type="submit" className="w-full">Save</Button>
+                </form>
+                </DialogContent>
+            </Dialog>
+            </div>
+
+            <Card>
+            <CardHeader className="pb-1">
+                <div className="flex items-center justify-between">
+                <div>
+                    <CardDescription>{balanceLabel}</CardDescription>
+                    <CardTitle className="text-3xl">${currentBalance.toFixed(2)}</CardTitle>
+                    {isCreditAccount && selectedAccount && (
+                        <p className="text-sm text-muted-foreground mt-1">
+                        Cashback available: ${getCashbackBalance(selectedAccount, transactions, cashbackRates).toFixed(2)} ({selectedAccount.cashbackRate}% default rate)
+                        </p>
+                    )}
+                </div>
+                {selectedAccount && (
+                    <div className="flex gap-2">
+                    {isCreditAccount && (
+                        <Dialog open={editCashbackOpen} onOpenChange={(o) => {
+                        if (o) setCashbackRateInput(String(selectedAccount.cashbackRate))
+                        setEditCashbackOpen(o)
+                        }}>
+                        <DialogTrigger asChild>
+                            <Button variant="outline" size="sm">Cashback Rates</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                            <DialogTitle>Cashback Rates — {selectedAccount.name}</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleEditCashbackSubmit} className="space-y-4">
+                            <div className="space-y-1">
+                                <Label htmlFor="editCashbackRate">Default Rate (%)</Label>
+                                <Input id="editCashbackRate" type="number" step="0.1" placeholder="e.g. 2"
+                                value={cashbackRateInput}
+                                onChange={(e) => setCashbackRateInput(e.target.value)} required />
+                                <p className="text-xs text-muted-foreground">Applies to any category without its own rate below.</p>
+                            </div>
+                            <Button type="submit" className="w-full">Save Default Rate</Button>
+                            </form>
+
+                            <div className="space-y-2 border-t pt-4">
+                            <Label>Category Rates</Label>
+                            {accountCashbackRates.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">No category-specific rates yet.</p>
+                            ) : (
+                                accountCashbackRates.map((r) => (
+                                <div key={r.id} className="flex items-center justify-between text-sm">
+                                    <span>{r.category}</span>
+                                    <div className="flex items-center gap-2">
+                                    <span>{r.rate}%</span>
+                                    <Button variant="ghost" size="sm" onClick={() => deleteCashbackRate(r.id)}>✕</Button>
+                                    </div>
+                                </div>
+                                ))
+                            )}
+                            </div>
+
+                            <div className="flex items-end gap-2">
+                            <div className="space-y-1 flex-1">
+                                <Label>Category</Label>
+                                <Select value={newCategoryRate.category} onValueChange={(v) => setNewCategoryRate({ ...newCategoryRate, category: v })}>
+                                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                                <SelectContent>
+                                    {CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                                </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1 w-24">
+                                <Label>Rate (%)</Label>
+                                <Input type="number" step="0.1" placeholder="e.g. 5"
+                                value={newCategoryRate.rate}
+                                onChange={(e) => setNewCategoryRate({ ...newCategoryRate, rate: e.target.value })} />
+                            </div>
+                            <Button type="button" onClick={handleAddCategoryRate}>Add</Button>
+                            </div>
+                        </DialogContent>
+                        </Dialog>
+                    )}
+                    <Button variant="outline" size="sm" onClick={handleToggleClosed}>
+                        {selectedAccount.closed ? 'Reopen Account' : 'Close Account'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={handleDeleteAccount}>
+                        Delete Account
+                    </Button>
+                    </div>
+                )}
+                </div>
+            </CardHeader>
+            </Card>
         </div>
 
         {/* Table + Chart */}
@@ -118,14 +440,14 @@ export default function Transactions(): React.JSX.Element {
                     </TableRow>
                     </TableHeader>
                     <TableBody>
-                    {transactions.length === 0 ? (
+                    {filteredTransactions.length === 0 ? (
                         <TableRow>
                         <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                             No transactions yet
                         </TableCell>
                         </TableRow>
                     ) : (
-                        transactions.map((t) => (
+                        filteredTransactions.map((t) => (
                         <TableRow key={t.id}>
                             <TableCell>{t.date}</TableCell>
                             <TableCell>{t.description ?? '—'}</TableCell>

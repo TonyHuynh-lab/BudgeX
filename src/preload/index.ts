@@ -37,6 +37,11 @@ const api = {
     getAll: () => ipcRenderer.invoke('priceSnapshots:getAll'),
     upsert: (data) => ipcRenderer.invoke('priceSnapshots:upsert', data)
   },
+  cashbackRates: {
+    getAll: () => ipcRenderer.invoke('cashbackRates:getAll'),
+    upsert: (data) => ipcRenderer.invoke('cashbackRates:upsert', data),
+    delete: (id) => ipcRenderer.invoke('cashbackRates:delete', id)
+  },
   stockPrices: {
     fetch: (tickers: string[]) => ipcRenderer.invoke('stockPrices:fetch', tickers),
   }

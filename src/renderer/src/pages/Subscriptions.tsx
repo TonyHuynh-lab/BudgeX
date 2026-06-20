@@ -9,6 +9,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 
 const CATEGORIES = ['Streaming', 'Software', 'News', 'Gaming', 'Fitness', 'Food', 'Other']
 
+export function getNextRenewal(startDate: string, billingCycle: string) {
+  const next = new Date(startDate)
+  const today = new Date()
+  while (next < today) {
+    if (billingCycle === 'monthly') {
+      next.setMonth(next.getMonth() + 1)
+    } else if (billingCycle === 'yearly') {
+      next.setFullYear(next.getFullYear() + 1)
+    }
+  }
+  return next
+}
+
 export default function Subscriptions(): React.JSX.Element {
   const { subscriptions, load, create, delete: deleteSubscription } = useSubscriptions()
   const [open, setOpen] = useState(false)

@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron'
 import { eq, desc } from 'drizzle-orm'
 import { db } from '../db'
-import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots } from '../db/schema'
+import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots, cashbackRates } from '../db/schema'
 import yahooFinanceModule from 'yahoo-finance2'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yahooFinance = (yahooFinanceModule as any).default ?? yahooFinanceModule
@@ -64,6 +64,18 @@ export function registerHandlers(): void {
     .values(data)
     .onConflictDoUpdate({ target: [priceSnapshots.ticker, priceSnapshots.date], set: { price: data.price } })
     .run()
+  )
+
+  // Cashback Rates
+  ipcMain.handle('cashbackRates:getAll', () => db.select().from(cashbackRates))
+  ipcMain.handle('cashbackRates:upsert', (_, data: { accountId: number; category: string; rate: number }) =>
+    db.insert(cashbackRates)
+      .values(data)
+      .onConflictDoUpdate({ target: [cashbackRates.accountId, cashbackRates.category], set: { rate: data.rate } })
+      .run()
+  )
+  ipcMain.handle('cashbackRates:delete', (_, id) =>
+    db.delete(cashbackRates).where(eq(cashbackRates.id, id)).run()
   )
 
   // Additional handlers for fetching stock prices from Yahoo Finance

@@ -1,0 +1,1 @@
+ALTER TABLE `accounts` ADD `cashbackRate` real DEFAULT 0 NOT NULL;

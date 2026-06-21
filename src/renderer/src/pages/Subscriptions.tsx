@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
-import { useSubscriptions } from '../store/index'
+import { useSubscriptions, useSettings } from '../store/index'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { formatCurrency } from '../lib/utils'
 
 const CATEGORIES = ['Streaming', 'Software', 'News', 'Gaming', 'Fitness', 'Food', 'Other']
 
@@ -24,6 +25,8 @@ export function getNextRenewal(startDate: string, billingCycle: string) {
 
 export default function Subscriptions(): React.JSX.Element {
   const { subscriptions, load, create, delete: deleteSubscription } = useSubscriptions()
+  const { settings } = useSettings()
+  const currency = settings?.currency ?? 'USD'
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({
     name: '', amount: '', billingCycle: 'monthly', startDate: '', category: ''
@@ -109,13 +112,13 @@ export default function Subscriptions(): React.JSX.Element {
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Monthly Total</CardDescription>
-            <CardTitle className="text-3xl">${monthlyTotal.toFixed(2)}</CardTitle>
+            <CardTitle className="text-3xl font-mono">{formatCurrency(monthlyTotal, currency)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Annual Total</CardDescription>
-            <CardTitle className="text-3xl">${annualTotal.toFixed(2)}</CardTitle>
+            <CardTitle className="text-3xl font-mono">{formatCurrency(annualTotal, currency)}</CardTitle>
           </CardHeader>
         </Card>
       </div>
@@ -139,7 +142,7 @@ export default function Subscriptions(): React.JSX.Element {
                 </div>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-semibold">${s.amount.toFixed(2)}</p>
+                <p className="text-2xl font-semibold font-mono">{formatCurrency(s.amount, currency)}</p>
                 <p className="text-sm text-muted-foreground capitalize">{s.billingCycle}</p>
                 <p className="text-xs text-muted-foreground mt-1">Since {s.startDate}</p>
               </CardContent>

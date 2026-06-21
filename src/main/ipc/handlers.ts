@@ -1,7 +1,9 @@
-import { ipcMain } from 'electron'
+import { app, dialog, ipcMain } from 'electron'
 import { eq, desc } from 'drizzle-orm'
+import { writeFileSync } from 'fs'
+import { join } from 'path'
 import { db } from '../db'
-import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots, cashbackRates } from '../db/schema'
+import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots, cashbackRates, settings, investmentAccounts } from '../db/schema'
 import yahooFinanceModule from 'yahoo-finance2'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yahooFinance = (yahooFinanceModule as any).default ?? yahooFinanceModule
@@ -35,6 +37,16 @@ export function registerHandlers(): void {
   )
   ipcMain.handle('subscriptions:delete', (_, id) =>
     db.delete(subscriptions).where(eq(subscriptions.id, id)).run()
+  )
+
+  // Investment Accounts
+  ipcMain.handle('investmentAccounts:getAll', () => db.select().from(investmentAccounts))
+  ipcMain.handle('investmentAccounts:create', (_, data) => db.insert(investmentAccounts).values(data).returning())
+  ipcMain.handle('investmentAccounts:update', (_, { id, ...data }) =>
+    db.update(investmentAccounts).set(data).where(eq(investmentAccounts.id, id)).returning()
+  )
+  ipcMain.handle('investmentAccounts:delete', (_, id) =>
+    db.delete(investmentAccounts).where(eq(investmentAccounts.id, id)).run()
   )
 
   // Stock Positions
@@ -77,6 +89,78 @@ export function registerHandlers(): void {
   ipcMain.handle('cashbackRates:delete', (_, id) =>
     db.delete(cashbackRates).where(eq(cashbackRates.id, id)).run()
   )
+
+  // Settings (single row, created on first read)
+  ipcMain.handle('settings:get', async () => {
+    const existing = await db.select().from(settings)
+    if (existing.length > 0) return existing[0]
+    const created = await db.insert(settings).values({}).returning()
+    return created[0]
+  })
+  ipcMain.handle('settings:update', async (_, data: { theme?: string; currency?: string }) => {
+    const existing = await db.select().from(settings)
+    if (existing.length === 0) return db.insert(settings).values(data).returning()
+    return db.update(settings).set(data).where(eq(settings.id, existing[0].id)).returning()
+  })
+
+  // App info
+  ipcMain.handle('app:getInfo', () => ({
+    dbPath: join(app.getPath('userData'), 'data.db')
+  }))
+
+  // Data export / reset
+  ipcMain.handle('data:export', async () => {
+    const { canceled, filePath } = await dialog.showSaveDialog({
+      title: 'Export Budgex Data',
+      defaultPath: `budgex-export-${new Date().toISOString().slice(0, 10)}.json`,
+      filters: [{ name: 'JSON', extensions: ['json'] }]
+    })
+    if (canceled || !filePath) return { canceled: true as const }
+
+    const [accountsData, transactionsData, subscriptionsData, stockPositionsData, savingsGoalsData, priceSnapshotsData, cashbackRatesData, investmentAccountsData] =
+      await Promise.all([
+        db.select().from(accounts),
+        db.select().from(transactions),
+        db.select().from(subscriptions),
+        db.select().from(stockPositions),
+        db.select().from(savingsGoals),
+        db.select().from(priceSnapshots),
+        db.select().from(cashbackRates),
+        db.select().from(investmentAccounts)
+      ])
+
+    writeFileSync(
+      filePath,
+      JSON.stringify(
+        {
+          exportedAt: new Date().toISOString(),
+          accounts: accountsData,
+          transactions: transactionsData,
+          subscriptions: subscriptionsData,
+          stockPositions: stockPositionsData,
+          savingsGoals: savingsGoalsData,
+          priceSnapshots: priceSnapshotsData,
+          cashbackRates: cashbackRatesData,
+          investmentAccounts: investmentAccountsData
+        },
+        null,
+        2
+      ),
+      'utf-8'
+    )
+    return { canceled: false as const, filePath }
+  })
+
+  ipcMain.handle('data:reset', () => {
+    db.delete(cashbackRates).run()
+    db.delete(transactions).run()
+    db.delete(priceSnapshots).run()
+    db.delete(stockPositions).run()
+    db.delete(investmentAccounts).run()
+    db.delete(savingsGoals).run()
+    db.delete(subscriptions).run()
+    db.delete(accounts).run()
+  })
 
   // Additional handlers for fetching stock prices from Yahoo Finance
   ipcMain.handle('stockPrices:fetch', async (_, tickers: string[]) => {

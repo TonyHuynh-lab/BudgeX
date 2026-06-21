@@ -3,10 +3,12 @@ import { ElectronAPI } from '@electron-toolkit/preload'
 type Account = { id: number; name: string; type: string; currency: string; openingBalance: number; closed: boolean; cashbackRate: number }
 type Transaction = { id: number; date: string; amount: number; category: string; description: string | null; accountId: number | null }
 type Subscription = { id: number; name: string; amount: number; billingCycle: string; startDate: string; category: string | null }
-type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string; currentPrice: number }
+type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string; currentPrice: number; accountId: number | null }
+type InvestmentAccount = { id: number; name: string; type: string }
 type SavingsGoal = { id: number; name: string; targetAmount: number; currentAmount: number; targetDate: string | null }
 type PriceSnapshot = { id: number; ticker: string; price: number; date: string }
 type CashbackRate = { id: number; accountId: number; category: string; rate: number }
+type Settings = { id: number; theme: 'light' | 'dark' | 'system'; currency: string }
 
 declare global {
   interface Window {
@@ -36,6 +38,12 @@ declare global {
         update: (data: StockPosition) => Promise<StockPosition[]>
         delete: (id: number) => Promise<void>
       }
+      investmentAccounts: {
+        getAll: () => Promise<InvestmentAccount[]>
+        create: (data: Omit<InvestmentAccount, 'id'>) => Promise<InvestmentAccount[]>
+        update: (data: InvestmentAccount) => Promise<InvestmentAccount[]>
+        delete: (id: number) => Promise<void>
+      }
       savingsGoals: {
         getAll: () => Promise<SavingsGoal[]>
         create: (data: Omit<SavingsGoal, 'id'>) => Promise<SavingsGoal[]>
@@ -53,6 +61,17 @@ declare global {
       }
       stockPrices: {
         fetch: (tickers: string[]) => Promise<Record<string, number>>
+      }
+      settings: {
+        get: () => Promise<Settings>
+        update: (data: Partial<Pick<Settings, 'theme' | 'currency'>>) => Promise<Settings[]>
+      }
+      appInfo: {
+        get: () => Promise<{ dbPath: string }>
+      }
+      data: {
+        export: () => Promise<{ canceled: true } | { canceled: false; filePath: string }>
+        reset: () => Promise<void>
       }
     }
   }

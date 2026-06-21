@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useTransactions, useAccounts, useCashbackRates, getAccountBalance, getCashbackBalance, CASHBACK_REDEMPTION_CATEGORY } from '../store/index'
+import { useTransactions, useAccounts, useCashbackRates, useSettings, getAccountBalance, getCashbackBalance, CASHBACK_REDEMPTION_CATEGORY } from '../store/index'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table'
@@ -8,6 +8,7 @@ import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
 import { PieChart, Pie, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import { formatCurrency } from '../lib/utils'
 
 const CATEGORIES = [
   'Food & Dining', 'Transport', 'Housing', 'Entertainment',
@@ -20,6 +21,8 @@ export default function Transactions(): React.JSX.Element {
     const { transactions, load, create, delete: deleteTransaction } = useTransactions()
     const { accounts, load: loadAccounts, create: createAccount, update: updateAccount, delete: deleteAccount } = useAccounts()
     const { cashbackRates, load: loadCashbackRates, upsert: upsertCashbackRate, delete: deleteCashbackRate } = useCashbackRates()
+    const { settings } = useSettings()
+    const currency = settings?.currency ?? 'USD'
     const [open, setOpen] = useState(false)
     const [form, setForm] = useState({ date: '', amount: '', category: '', description: '', kind: 'expense', accountId: '', payFrom: '' })
     const [chartFilter, setChartFilter] = useState<'expense' | 'all'>('expense')
@@ -45,7 +48,7 @@ export default function Transactions(): React.JSX.Element {
         if (form.payFrom === 'cashback') {
             const available = creditAccount ? getCashbackBalance(creditAccount, transactions, cashbackRates) : 0
             if (amount > available) {
-            window.alert(`This account only has $${available.toFixed(2)} of cashback available.`)
+            window.alert(`This account only has ${formatCurrency(available, currency)} of cashback available.`)
             return
             }
             await create({
@@ -242,7 +245,7 @@ export default function Transactions(): React.JSX.Element {
                     <Select value={form.payFrom} onValueChange={(v) => setForm({ ...form, payFrom: v })}>
                         <SelectTrigger><SelectValue placeholder="Select funding source" /></SelectTrigger>
                         <SelectContent>
-                        <SelectItem value="cashback">Cashback (${formAccountCashback.toFixed(2)} available)</SelectItem>
+                        <SelectItem value="cashback">Cashback ({formatCurrency(formAccountCashback, currency)} available)</SelectItem>
                         {fundingAccounts.map((a) => <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>)}
                         </SelectContent>
                     </Select>
@@ -285,7 +288,10 @@ export default function Transactions(): React.JSX.Element {
                 </SelectContent>
             </Select>
 
-            <Dialog open={accountOpen} onOpenChange={setAccountOpen}>
+            <Dialog open={accountOpen} onOpenChange={(o) => {
+                setAccountOpen(o)
+                if (o) setAccountForm((f) => ({ ...f, currency }))
+            }}>
                 <DialogTrigger asChild>
                 <Button variant="outline">Add Account</Button>
                 </DialogTrigger>
@@ -340,10 +346,10 @@ export default function Transactions(): React.JSX.Element {
                 <div className="flex items-center justify-between">
                 <div>
                     <CardDescription>{balanceLabel}</CardDescription>
-                    <CardTitle className="text-3xl">${currentBalance.toFixed(2)}</CardTitle>
+                    <CardTitle className="text-3xl font-mono">{formatCurrency(currentBalance, currency)}</CardTitle>
                     {isCreditAccount && selectedAccount && (
                         <p className="text-sm text-muted-foreground mt-1">
-                        Cashback available: ${getCashbackBalance(selectedAccount, transactions, cashbackRates).toFixed(2)} ({selectedAccount.cashbackRate}% default rate)
+                        Cashback available: {formatCurrency(getCashbackBalance(selectedAccount, transactions, cashbackRates), currency)} ({selectedAccount.cashbackRate}% default rate)
                         </p>
                     )}
                 </div>
@@ -453,7 +459,7 @@ export default function Transactions(): React.JSX.Element {
                             <TableCell>{t.description ?? '—'}</TableCell>
                             <TableCell>{t.category}</TableCell>
                             <TableCell className={`text-right font-mono ${t.amount < 0 ? 'text-red-500' : 'text-green-500'}`}>
-                            {t.amount < 0 ? '-' : '+'}${Math.abs(t.amount).toFixed(2)}
+                            {t.amount < 0 ? '-' : '+'}{formatCurrency(Math.abs(t.amount), currency)}
                             </TableCell>
                             <TableCell>
                             <Button variant="ghost" size="sm" onClick={() => deleteTransaction(t.id)}>
@@ -495,7 +501,7 @@ export default function Transactions(): React.JSX.Element {
                 <ResponsiveContainer width="100%" height={280}>
                     <PieChart>
                     <Pie data={chartData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80} />
-                    <Tooltip formatter={(val) => (typeof val === 'number' ? `$${val.toFixed(2)}` : val)} />
+                    <Tooltip formatter={(val) => (typeof val === 'number' ? formatCurrency(val, currency) : val)} />
                     <Legend />
                     </PieChart>
                 </ResponsiveContainer>

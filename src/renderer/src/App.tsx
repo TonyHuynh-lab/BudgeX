@@ -5,6 +5,7 @@ import Transactions from './pages/Transactions'
 import Subscriptions from './pages/Subscriptions'
 import Stocks from './pages/Stocks'
 import Savings from './pages/Savings'
+import Settings from './pages/Settings'
 
 function App(): React.JSX.Element {
   return (
@@ -17,6 +18,7 @@ function App(): React.JSX.Element {
           <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="stocks" element={<Stocks />} />
           <Route path="savings" element={<Savings />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </HashRouter>

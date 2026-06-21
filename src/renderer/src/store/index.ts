@@ -185,6 +185,43 @@ export const useSubscriptions = create<SubscriptionsStore>((set) => ({
     }
 }))
 
+// InvestmentAccount type definition
+export type InvestmentAccount = {
+    id: number,
+    name: string,
+    type: string
+}
+
+type InvestmentAccountsStore = {
+    investmentAccounts: InvestmentAccount[]
+    load: () => Promise<void>
+    create: (data: Omit<InvestmentAccount, 'id'>) => Promise<void>
+    update: (data: InvestmentAccount) => Promise<void>
+    delete: (id: number) => Promise<void>
+}
+
+export const useInvestmentAccounts = create<InvestmentAccountsStore>((set) => ({
+    investmentAccounts: [],
+    load: async () => {
+        const data = await window.api.investmentAccounts.getAll()
+        set({ investmentAccounts: data })
+    },
+    create: async (data) => {
+        await window.api.investmentAccounts.create(data)
+        const updated = await window.api.investmentAccounts.getAll()
+        set({ investmentAccounts: updated })
+    },
+    update: async (data) => {
+        await window.api.investmentAccounts.update(data)
+        const updated = await window.api.investmentAccounts.getAll()
+        set({ investmentAccounts: updated })
+    },
+    delete: async (id) => {
+        await window.api.investmentAccounts.delete(id)
+        set((state) => ({ investmentAccounts: state.investmentAccounts.filter((a) => a.id !== id) }))
+    }
+}))
+
 // StockPosition type definition
 type StockPosition = {
     id: number,
@@ -192,7 +229,8 @@ type StockPosition = {
     shares: number,
     avgCostBasis: number,
     purchaseDate: string,
-    currentPrice: number
+    currentPrice: number,
+    accountId: number | null
 }
 
 type StockPositionsStore = {
@@ -289,4 +327,37 @@ export const usePriceSnapshots = create<PriceSnapshotsStore>((set) => ({
       const updated = await window.api.priceSnapshots.getAll()
       set({ priceSnapshots: updated })
     }
+}))
+
+// Settings type definition
+export type Settings = {
+  id: number
+  theme: 'light' | 'dark' | 'system'
+  currency: string
+}
+
+// Applies the resolved theme to the document root. 'system' resolves against the OS preference.
+export function applyTheme(theme: Settings['theme']): void {
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  document.documentElement.classList.toggle('dark', isDark)
+}
+
+type SettingsStore = {
+  settings: Settings | null
+  load: () => Promise<void>
+  update: (data: Partial<Pick<Settings, 'theme' | 'currency'>>) => Promise<void>
+}
+
+export const useSettings = create<SettingsStore>((set) => ({
+  settings: null,
+  load: async () => {
+    const data = await window.api.settings.get()
+    set({ settings: data })
+    applyTheme(data.theme)
+  },
+  update: async (data) => {
+    const [updated] = await window.api.settings.update(data)
+    set({ settings: updated })
+    if (data.theme) applyTheme(updated.theme)
+  }
 }))

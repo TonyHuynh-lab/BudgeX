@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
-import { useTransactions, useAccounts, useSubscriptions, useStockPositions, useSavingsGoals, useCashbackRates, getAccountBalance, getCashbackBalance } from '../store/index'
+import { useTransactions, useAccounts, useSubscriptions, useStockPositions, useSavingsGoals, useCashbackRates, useSettings, getAccountBalance, getCashbackBalance } from '../store/index'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { getNextRenewal } from './Subscriptions'
+import { formatCurrency } from '../lib/utils'
 
 export default function Dashboard(): React.JSX.Element {
   const { transactions, load: loadTransactions } = useTransactions()
@@ -12,6 +13,8 @@ export default function Dashboard(): React.JSX.Element {
   const { stockPositions, load: loadStockPositions } = useStockPositions()
   const { savingsGoals, load: loadSavingsGoals } = useSavingsGoals()
   const { cashbackRates, load: loadCashbackRates } = useCashbackRates()
+  const { settings } = useSettings()
+  const currency = settings?.currency ?? 'USD'
 
   useEffect(() => {
     loadTransactions()
@@ -90,19 +93,19 @@ export default function Dashboard(): React.JSX.Element {
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Net Worth</CardDescription>
-            <CardTitle className="text-3xl">${netWorth.toFixed(2)}</CardTitle>
+            <CardTitle className="text-3xl font-mono">{formatCurrency(netWorth, currency)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Monthly Income</CardDescription>
-            <CardTitle className="text-3xl text-green-500">${monthlyIncome.toFixed(2)}</CardTitle>
+            <CardTitle className="text-3xl font-mono text-green-500">{formatCurrency(monthlyIncome, currency)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Monthly Expenses</CardDescription>
-            <CardTitle className="text-3xl text-red-500">${monthlyExpenses.toFixed(2)}</CardTitle>
+            <CardTitle className="text-3xl font-mono text-red-500">{formatCurrency(monthlyExpenses, currency)}</CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -122,8 +125,8 @@ export default function Dashboard(): React.JSX.Element {
             <BarChart data={cashFlowData}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
-              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => `$${v}`} />
-              <Tooltip formatter={(val) => (typeof val === 'number' ? `$${val.toFixed(2)}` : val)} />
+              <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, currency)} />
+              <Tooltip formatter={(val) => (typeof val === 'number' ? formatCurrency(val, currency) : val)} />
               <Legend />
               <Bar dataKey="income" name="Income" fill="#00C49F" />
               <Bar dataKey="expenses" name="Expenses" fill="#FF6B6B" />
@@ -144,8 +147,8 @@ export default function Dashboard(): React.JSX.Element {
               {upcomingSubscriptions.map((s) => (
                 <div key={s.id} className="flex items-center justify-between text-sm">
                   <span>{s.name}</span>
-                  <span className="text-muted-foreground">
-                    ${s.amount.toFixed(2)} · {s.nextRenewal.toLocaleDateString()}
+                  <span className="text-muted-foreground font-mono">
+                    {formatCurrency(s.amount, currency)} · {s.nextRenewal.toLocaleDateString()}
                   </span>
                 </div>
               ))}
@@ -169,8 +172,8 @@ export default function Dashboard(): React.JSX.Element {
                   <div key={g.id} className="space-y-1">
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{g.name}</span>
-                      <span className="text-muted-foreground">
-                        ${g.currentAmount.toFixed(2)} of ${g.targetAmount.toFixed(2)}
+                      <span className="text-muted-foreground font-mono">
+                        {formatCurrency(g.currentAmount, currency)} of {formatCurrency(g.targetAmount, currency)}
                       </span>
                     </div>
                     <Progress value={progress} className="h-2" />

@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react'
-import { useSavingsGoals } from '../store/index'
+import { useSavingsGoals, useSettings } from '../store/index'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
 import { Progress } from '../components/ui/progress'
+import { formatCurrency } from '../lib/utils'
 
 export default function Savings(): React.JSX.Element {
   const { savingsGoals, load, create, update, delete: deleteGoal } = useSavingsGoals()
+  const { settings } = useSettings()
+  const currency = settings?.currency ?? 'USD'
   const [open, setOpen] = useState(false)
   const [contributeGoalId, setContributeGoalId] = useState<number | null>(null)
   const [contributeAmount, setContributeAmount] = useState('')
@@ -93,7 +96,7 @@ export default function Savings(): React.JSX.Element {
             <div className="flex items-center justify-between">
               <div>
                 <CardDescription>Overall Progress</CardDescription>
-                <CardTitle>${totalSaved.toFixed(2)} of ${totalTarget.toFixed(2)}</CardTitle>
+                <CardTitle className="font-mono">{formatCurrency(totalSaved, currency)} of {formatCurrency(totalTarget, currency)}</CardTitle>
               </div>
               <span className="text-2xl font-bold text-muted-foreground">
                 {overallProgress.toFixed(0)}%
@@ -127,12 +130,12 @@ export default function Savings(): React.JSX.Element {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <Progress value={progress} className="h-2" />
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">${g.currentAmount.toFixed(2)}</span>
-                    <span className="text-muted-foreground">of ${g.targetAmount.toFixed(2)}</span>
+                  <div className="flex justify-between text-sm font-mono">
+                    <span className="font-medium">{formatCurrency(g.currentAmount, currency)}</span>
+                    <span className="text-muted-foreground">of {formatCurrency(g.targetAmount, currency)}</span>
                   </div>
                   {remaining > 0 && (
-                    <p className="text-xs text-muted-foreground">${remaining.toFixed(2)} remaining</p>
+                    <p className="text-xs text-muted-foreground font-mono">{formatCurrency(remaining, currency)} remaining</p>
                   )}
                   {progress >= 100 && (
                     <p className="text-xs text-green-500 font-medium">Goal reached!</p>

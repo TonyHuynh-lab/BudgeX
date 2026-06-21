@@ -35,13 +35,20 @@ export const subscriptions = sqliteTable('subscriptions', {
   category: text()
 })
 
+export const investmentAccounts = sqliteTable('investment_accounts', {
+  id: int().primaryKey({ autoIncrement: true }),
+  name: text().notNull(),
+  type: text().notNull() // e.g. 'Individual Brokerage' | 'Roth IRA' | 'Traditional IRA' | '401(k)' | '529' | 'Other'
+})
+
 export const stockPositions = sqliteTable('stock_positions', {
   id: int().primaryKey({ autoIncrement: true }),
   ticker: text().notNull(),
   shares: real().notNull(),
   avgCostBasis: real().notNull(),
   purchaseDate: text().notNull(),
-  currentPrice: real().notNull().default(0)
+  currentPrice: real().notNull().default(0),
+  accountId: int().references(() => investmentAccounts.id)
 })
 
 export const savingsGoals = sqliteTable('savings_goals', {
@@ -58,3 +65,10 @@ export const priceSnapshots = sqliteTable('price_snapshots', {
   price: real().notNull(),
   date: text().notNull(),
 }, (t) => [uniqueIndex('ticker_date').on(t.ticker, t.date)])
+
+// Single-row table: app-level preferences. There is always exactly one row.
+export const settings = sqliteTable('settings', {
+  id: int().primaryKey({ autoIncrement: true }),
+  theme: text().notNull().default('system'), // 'light' | 'dark' | 'system'
+  currency: text().notNull().default('USD') // ISO 4217 code
+})

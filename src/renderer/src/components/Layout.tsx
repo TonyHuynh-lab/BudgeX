@@ -1,5 +1,7 @@
+import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, RefreshCw, TrendingUp, PiggyBank } from 'lucide-react'
+import { LayoutDashboard, ArrowLeftRight, RefreshCw, TrendingUp, PiggyBank, Settings as SettingsIcon } from 'lucide-react'
+import { applyTheme, useSettings } from '../store/index'
 
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -7,9 +9,25 @@ const navItems = [
   { to: '/subscriptions', label: 'Subscriptions', icon: RefreshCw },
   { to: '/stocks', label: 'Stocks', icon: TrendingUp },
   { to: '/savings', label: 'Savings', icon: PiggyBank },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon },
 ]
 
 export default function Layout(): React.JSX.Element {
+  const { load } = useSettings()
+
+  useEffect(() => {
+    load()
+
+    // Re-resolve 'system' theme if the OS preference changes while the app is open.
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (): void => {
+      const current = useSettings.getState().settings
+      if (current?.theme === 'system') applyTheme('system')
+    }
+    media.addEventListener('change', handleChange)
+    return () => media.removeEventListener('change', handleChange)
+  }, [])
+
   return (
     <div className="flex h-screen bg-background text-foreground">
       <aside className="w-56 shrink-0 border-r flex flex-col py-6 px-3 gap-1">

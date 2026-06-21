@@ -50,6 +50,20 @@
       "when": 1781983679709,
       "tag": "0006_plain_lenny_balinger",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1782058788580,
+      "tag": "0007_bright_tomorrow_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1782060323553,
+      "tag": "0008_fixed_justice",
+      "breakpoints": true
     }
   ]
 }

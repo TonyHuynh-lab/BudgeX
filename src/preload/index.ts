@@ -27,6 +27,12 @@ const api = {
     update: (data) => ipcRenderer.invoke('stockPositions:update', data),
     delete: (id) => ipcRenderer.invoke('stockPositions:delete', id)
   },
+  investmentAccounts: {
+    getAll: () => ipcRenderer.invoke('investmentAccounts:getAll'),
+    create: (data) => ipcRenderer.invoke('investmentAccounts:create', data),
+    update: (data) => ipcRenderer.invoke('investmentAccounts:update', data),
+    delete: (id) => ipcRenderer.invoke('investmentAccounts:delete', id)
+  },
   savingsGoals: {
     getAll: () => ipcRenderer.invoke('savingsGoals:getAll'),
     create: (data) => ipcRenderer.invoke('savingsGoals:create', data),
@@ -44,6 +50,17 @@ const api = {
   },
   stockPrices: {
     fetch: (tickers: string[]) => ipcRenderer.invoke('stockPrices:fetch', tickers),
+  },
+  settings: {
+    get: () => ipcRenderer.invoke('settings:get'),
+    update: (data) => ipcRenderer.invoke('settings:update', data)
+  },
+  appInfo: {
+    get: () => ipcRenderer.invoke('app:getInfo')
+  },
+  data: {
+    export: () => ipcRenderer.invoke('data:export'),
+    reset: () => ipcRenderer.invoke('data:reset')
   }
 }
 

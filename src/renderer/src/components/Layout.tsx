@@ -1,6 +1,13 @@
 import { useEffect } from 'react'
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, ArrowLeftRight, RefreshCw, TrendingUp, PiggyBank, Settings as SettingsIcon } from 'lucide-react'
+import {
+  LayoutDashboard,
+  ArrowLeftRight,
+  RefreshCw,
+  TrendingUp,
+  PiggyBank,
+  Settings as SettingsIcon
+} from 'lucide-react'
 import { applyTheme, useSettings } from '../store/index'
 
 const navItems = [
@@ -9,7 +16,7 @@ const navItems = [
   { to: '/subscriptions', label: 'Subscriptions', icon: RefreshCw },
   { to: '/stocks', label: 'Stocks', icon: TrendingUp },
   { to: '/savings', label: 'Savings', icon: PiggyBank },
-  { to: '/settings', label: 'Settings', icon: SettingsIcon },
+  { to: '/settings', label: 'Settings', icon: SettingsIcon }
 ]
 
 export default function Layout(): React.JSX.Element {

@@ -1,8 +1,27 @@
 import { useEffect } from 'react'
-import { useTransactions, useAccounts, useSubscriptions, useStockPositions, useSavingsGoals, useCashbackRates, useSettings, getAccountBalance, getCashbackBalance } from '../store/index'
+import {
+  useTransactions,
+  useAccounts,
+  useSubscriptions,
+  useStockPositions,
+  useSavingsGoals,
+  useCashbackRates,
+  useSettings,
+  getAccountBalance,
+  getCashbackBalance
+} from '../store/index'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts'
 import { getNextRenewal } from './Subscriptions'
 import { formatCurrency } from '../lib/utils'
 
@@ -47,11 +66,14 @@ export default function Dashboard(): React.JSX.Element {
     .filter(isCreditCharge)
     .reduce((sum, t) => sum + t.amount, 0)
 
-  const accountsBalance = accounts.filter((a) => !a.closed).reduce((sum, a) => {
-    const balance = getAccountBalance(a, transactions)
-    if (a.type === 'credit') return sum - balance + getCashbackBalance(a, transactions, cashbackRates)
-    return sum + balance
-  }, 0)
+  const accountsBalance = accounts
+    .filter((a) => !a.closed)
+    .reduce((sum, a) => {
+      const balance = getAccountBalance(a, transactions)
+      if (a.type === 'credit')
+        return sum - balance + getCashbackBalance(a, transactions, cashbackRates)
+      return sum + balance
+    }, 0)
 
   const stockValue = stockPositions.reduce((sum, s) => sum + s.shares * s.currentPrice, 0)
 
@@ -63,8 +85,10 @@ export default function Dashboard(): React.JSX.Element {
 
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
-    return { key: `${d.getFullYear()}-${d.getMonth()}`, label:
-             d.toLocaleString('default', { month: 'short' }) }
+    return {
+      key: `${d.getFullYear()}-${d.getMonth()}`,
+      label: d.toLocaleString('default', { month: 'short' })
+    }
   })
 
   const upcomingSubscriptions = subscriptions
@@ -93,19 +117,25 @@ export default function Dashboard(): React.JSX.Element {
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Net Worth</CardDescription>
-            <CardTitle className="text-3xl font-mono">{formatCurrency(netWorth, currency)}</CardTitle>
+            <CardTitle className="text-3xl font-mono">
+              {formatCurrency(netWorth, currency)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Monthly Income</CardDescription>
-            <CardTitle className="text-3xl font-mono text-green-500">{formatCurrency(monthlyIncome, currency)}</CardTitle>
+            <CardTitle className="text-3xl font-mono text-green-500">
+              {formatCurrency(monthlyIncome, currency)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-1">
             <CardDescription>Monthly Expenses</CardDescription>
-            <CardTitle className="text-3xl font-mono text-red-500">{formatCurrency(monthlyExpenses, currency)}</CardTitle>
+            <CardTitle className="text-3xl font-mono text-red-500">
+              {formatCurrency(monthlyExpenses, currency)}
+            </CardTitle>
           </CardHeader>
         </Card>
         <Card>
@@ -126,7 +156,9 @@ export default function Dashboard(): React.JSX.Element {
               <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
               <XAxis dataKey="month" tick={{ fontSize: 12 }} />
               <YAxis tick={{ fontSize: 12 }} tickFormatter={(v) => formatCurrency(v, currency)} />
-              <Tooltip formatter={(val) => (typeof val === 'number' ? formatCurrency(val, currency) : val)} />
+              <Tooltip
+                formatter={(val) => (typeof val === 'number' ? formatCurrency(val, currency) : val)}
+              />
               <Legend />
               <Bar dataKey="income" name="Income" fill="#00C49F" />
               <Bar dataKey="expenses" name="Expenses" fill="#FF6B6B" />
@@ -173,7 +205,8 @@ export default function Dashboard(): React.JSX.Element {
                     <div className="flex items-center justify-between text-sm">
                       <span className="font-medium">{g.name}</span>
                       <span className="text-muted-foreground font-mono">
-                        {formatCurrency(g.currentAmount, currency)} of {formatCurrency(g.targetAmount, currency)}
+                        {formatCurrency(g.currentAmount, currency)} of{' '}
+                        {formatCurrency(g.targetAmount, currency)}
                       </span>
                     </div>
                     <Progress value={progress} className="h-2" />

@@ -10,12 +10,18 @@ export const accounts = sqliteTable('accounts', {
   cashbackRate: real().notNull().default(0) // default percent, credit accounts only (e.g. 2 = 2%)
 })
 
-export const cashbackRates = sqliteTable('cashback_rates', {
-  id: int().primaryKey({ autoIncrement: true }),
-  accountId: int().notNull().references(() => accounts.id),
-  category: text().notNull(),
-  rate: real().notNull().default(0) // percent, overrides accounts.cashbackRate for this category
-}, (t) => [uniqueIndex('account_category').on(t.accountId, t.category)])
+export const cashbackRates = sqliteTable(
+  'cashback_rates',
+  {
+    id: int().primaryKey({ autoIncrement: true }),
+    accountId: int()
+      .notNull()
+      .references(() => accounts.id),
+    category: text().notNull(),
+    rate: real().notNull().default(0) // percent, overrides accounts.cashbackRate for this category
+  },
+  (t) => [uniqueIndex('account_category').on(t.accountId, t.category)]
+)
 
 export const transactions = sqliteTable('transactions', {
   id: int().primaryKey({ autoIncrement: true }),
@@ -59,12 +65,16 @@ export const savingsGoals = sqliteTable('savings_goals', {
   targetDate: text()
 })
 
-export const priceSnapshots = sqliteTable('price_snapshots', {
-  id: int().primaryKey({ autoIncrement: true }),
-  ticker: text().notNull(),
-  price: real().notNull(),
-  date: text().notNull(),
-}, (t) => [uniqueIndex('ticker_date').on(t.ticker, t.date)])
+export const priceSnapshots = sqliteTable(
+  'price_snapshots',
+  {
+    id: int().primaryKey({ autoIncrement: true }),
+    ticker: text().notNull(),
+    price: real().notNull(),
+    date: text().notNull()
+  },
+  (t) => [uniqueIndex('ticker_date').on(t.ticker, t.date)]
+)
 
 // Single-row table: app-level preferences. There is always exactly one row.
 export const settings = sqliteTable('settings', {

@@ -103,10 +103,7 @@
       "indexes": {
         "account_category": {
           "name": "account_category",
-          "columns": [
-            "accountId",
-            "category"
-          ],
+          "columns": ["accountId", "category"],
           "isUnique": true
         }
       },
@@ -115,12 +112,8 @@
           "name": "cashback_rates_accountId_accounts_id_fk",
           "tableFrom": "cashback_rates",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "accountId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["accountId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -164,10 +157,7 @@
       "indexes": {
         "ticker_date": {
           "name": "ticker_date",
-          "columns": [
-            "ticker",
-            "date"
-          ],
+          "columns": ["ticker", "date"],
           "isUnique": true
         }
       },
@@ -379,12 +369,8 @@
           "name": "transactions_accountId_accounts_id_fk",
           "tableFrom": "transactions",
           "tableTo": "accounts",
-          "columnsFrom": [
-            "accountId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["accountId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

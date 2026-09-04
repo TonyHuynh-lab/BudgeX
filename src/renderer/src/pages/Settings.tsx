@@ -2,10 +2,23 @@ import { useEffect, useState } from 'react'
 import { useSettings, type Settings as SettingsType } from '../store/index'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from '../components/ui/dialog'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose
+} from '../components/ui/dialog'
 import { Input } from '../components/ui/input'
 import { Label } from '../components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '../components/ui/select'
 import { formatCurrency } from '../lib/utils'
 
 const THEME_OPTIONS: { value: SettingsType['theme']; label: string }[] = [
@@ -124,7 +137,9 @@ export default function Settings(): React.JSX.Element {
           <Card>
             <CardHeader>
               <CardTitle>Data</CardTitle>
-              <CardDescription>Your data lives only on this device — nothing is sent anywhere.</CardDescription>
+              <CardDescription>
+                Your data lives only on this device — nothing is sent anywhere.
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1">
@@ -147,7 +162,9 @@ export default function Settings(): React.JSX.Element {
               <div className="flex items-center justify-between border-t pt-4">
                 <div className="space-y-0.5">
                   <Label>Reset all data</Label>
-                  <p className="text-sm text-muted-foreground">Permanently delete everything. This can&apos;t be undone.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Permanently delete everything. This can&apos;t be undone.
+                  </p>
                 </div>
                 <Button variant="destructive" onClick={() => setResetOpen(true)}>
                   Reset all data
@@ -170,13 +187,11 @@ export default function Settings(): React.JSX.Element {
             <DialogTitle>Reset all data?</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            This permanently deletes every account, transaction, subscription, stock position, savings
-            goal, and cashback rate. This can&apos;t be undone.
+            This permanently deletes every account, transaction, subscription, stock position,
+            savings goal, and cashback rate. This can&apos;t be undone.
           </p>
           <div className="space-y-1">
-            <Label htmlFor="confirmReset">
-              Type {RESET_PHRASE} to confirm
-            </Label>
+            <Label htmlFor="confirmReset">Type {RESET_PHRASE} to confirm</Label>
             <Input
               id="confirmReset"
               placeholder={RESET_PHRASE}

@@ -59,9 +59,10 @@ export const CASHBACK_REDEMPTION_CATEGORY = 'Cashback Redemption'
 // For credit accounts this is the amount owed (charges increase it, payments decrease it) —
 // callers computing a net total across mixed account types must subtract credit balances.
 export function getAccountBalance(account: Account, transactions: Transaction[]): number {
-  return account.openingBalance + transactions
-    .filter((t) => t.accountId === account.id)
-    .reduce((sum, t) => sum + t.amount, 0)
+  return (
+    account.openingBalance +
+    transactions.filter((t) => t.accountId === account.id).reduce((sum, t) => sum + t.amount, 0)
+  )
 }
 
 // CashbackRate type definition — a per-account, per-category override of accounts.cashbackRate
@@ -75,7 +76,11 @@ export type CashbackRate = {
 // Cashback balance for a credit account: each charge earns its category's rate (falling back
 // to the account's default cashbackRate), minus whatever has already been redeemed to pay
 // down the card (see CASHBACK_REDEMPTION_CATEGORY).
-export function getCashbackBalance(account: Account, transactions: Transaction[], cashbackRates: CashbackRate[]): number {
+export function getCashbackBalance(
+  account: Account,
+  transactions: Transaction[],
+  cashbackRates: CashbackRate[]
+): number {
   const rateByCategory = new Map(
     cashbackRates.filter((r) => r.accountId === account.id).map((r) => [r.category, r.rate])
   )
@@ -156,177 +161,177 @@ type Subscription = {
 }
 
 type SubscriptionsStore = {
-    subscriptions: Subscription[]
-    load: () => Promise<void>
-    create: (data: Omit<Subscription, 'id'>) => Promise<void>
-    update: (data: Subscription) => Promise<void>
-    delete: (id: number) => Promise<void>
+  subscriptions: Subscription[]
+  load: () => Promise<void>
+  create: (data: Omit<Subscription, 'id'>) => Promise<void>
+  update: (data: Subscription) => Promise<void>
+  delete: (id: number) => Promise<void>
 }
 
 export const useSubscriptions = create<SubscriptionsStore>((set) => ({
-    subscriptions: [],
-    load: async () => {
-        const data = await window.api.subscriptions.getAll()
-        set({ subscriptions: data })
-    },
-    create: async (data) => {
-        await window.api.subscriptions.create(data)
-        const updated = await window.api.subscriptions.getAll()
-        set({ subscriptions: updated })
-    },
-    update: async (data) => {
-        await window.api.subscriptions.update(data)
-        const updated = await window.api.subscriptions.getAll()
-        set({ subscriptions: updated })
-    },
-    delete: async (id) => {
-        await window.api.subscriptions.delete(id)
-        set((state) => ({ subscriptions: state.subscriptions.filter((s) => s.id !== id) }))
-    }
+  subscriptions: [],
+  load: async () => {
+    const data = await window.api.subscriptions.getAll()
+    set({ subscriptions: data })
+  },
+  create: async (data) => {
+    await window.api.subscriptions.create(data)
+    const updated = await window.api.subscriptions.getAll()
+    set({ subscriptions: updated })
+  },
+  update: async (data) => {
+    await window.api.subscriptions.update(data)
+    const updated = await window.api.subscriptions.getAll()
+    set({ subscriptions: updated })
+  },
+  delete: async (id) => {
+    await window.api.subscriptions.delete(id)
+    set((state) => ({ subscriptions: state.subscriptions.filter((s) => s.id !== id) }))
+  }
 }))
 
 // InvestmentAccount type definition
 export type InvestmentAccount = {
-    id: number,
-    name: string,
-    type: string
+  id: number
+  name: string
+  type: string
 }
 
 type InvestmentAccountsStore = {
-    investmentAccounts: InvestmentAccount[]
-    load: () => Promise<void>
-    create: (data: Omit<InvestmentAccount, 'id'>) => Promise<void>
-    update: (data: InvestmentAccount) => Promise<void>
-    delete: (id: number) => Promise<void>
+  investmentAccounts: InvestmentAccount[]
+  load: () => Promise<void>
+  create: (data: Omit<InvestmentAccount, 'id'>) => Promise<void>
+  update: (data: InvestmentAccount) => Promise<void>
+  delete: (id: number) => Promise<void>
 }
 
 export const useInvestmentAccounts = create<InvestmentAccountsStore>((set) => ({
-    investmentAccounts: [],
-    load: async () => {
-        const data = await window.api.investmentAccounts.getAll()
-        set({ investmentAccounts: data })
-    },
-    create: async (data) => {
-        await window.api.investmentAccounts.create(data)
-        const updated = await window.api.investmentAccounts.getAll()
-        set({ investmentAccounts: updated })
-    },
-    update: async (data) => {
-        await window.api.investmentAccounts.update(data)
-        const updated = await window.api.investmentAccounts.getAll()
-        set({ investmentAccounts: updated })
-    },
-    delete: async (id) => {
-        await window.api.investmentAccounts.delete(id)
-        set((state) => ({ investmentAccounts: state.investmentAccounts.filter((a) => a.id !== id) }))
-    }
+  investmentAccounts: [],
+  load: async () => {
+    const data = await window.api.investmentAccounts.getAll()
+    set({ investmentAccounts: data })
+  },
+  create: async (data) => {
+    await window.api.investmentAccounts.create(data)
+    const updated = await window.api.investmentAccounts.getAll()
+    set({ investmentAccounts: updated })
+  },
+  update: async (data) => {
+    await window.api.investmentAccounts.update(data)
+    const updated = await window.api.investmentAccounts.getAll()
+    set({ investmentAccounts: updated })
+  },
+  delete: async (id) => {
+    await window.api.investmentAccounts.delete(id)
+    set((state) => ({ investmentAccounts: state.investmentAccounts.filter((a) => a.id !== id) }))
+  }
 }))
 
 // StockPosition type definition
 type StockPosition = {
-    id: number,
-    ticker: string,
-    shares: number,
-    avgCostBasis: number,
-    purchaseDate: string,
-    currentPrice: number,
-    accountId: number | null
+  id: number
+  ticker: string
+  shares: number
+  avgCostBasis: number
+  purchaseDate: string
+  currentPrice: number
+  accountId: number | null
 }
 
 type StockPositionsStore = {
-    stockPositions: StockPosition[]
-    load: () => Promise<void>
-    create: (data: Omit<StockPosition, 'id'>) => Promise<void>
-    update: (data: StockPosition) => Promise<void>
-    delete: (id: number) => Promise<void>
+  stockPositions: StockPosition[]
+  load: () => Promise<void>
+  create: (data: Omit<StockPosition, 'id'>) => Promise<void>
+  update: (data: StockPosition) => Promise<void>
+  delete: (id: number) => Promise<void>
 }
 
 export const useStockPositions = create<StockPositionsStore>((set) => ({
-    stockPositions: [],
-    load: async () => {
-        const data = await window.api.stockPositions.getAll()
-        set({ stockPositions: data })
-    },
-    create: async (data) => {
-        await window.api.stockPositions.create(data)
-        const updated = await window.api.stockPositions.getAll()
-        set({ stockPositions: updated })
-    },
-    update: async (data) => {
-        await window.api.stockPositions.update(data)
-        const updated = await window.api.stockPositions.getAll()
-        set({ stockPositions: updated })
-    },
-    delete: async (id) => {
-        await window.api.stockPositions.delete(id)
-        set((state) => ({ stockPositions: state.stockPositions.filter((s) => s.id !== id) }))
-    }
+  stockPositions: [],
+  load: async () => {
+    const data = await window.api.stockPositions.getAll()
+    set({ stockPositions: data })
+  },
+  create: async (data) => {
+    await window.api.stockPositions.create(data)
+    const updated = await window.api.stockPositions.getAll()
+    set({ stockPositions: updated })
+  },
+  update: async (data) => {
+    await window.api.stockPositions.update(data)
+    const updated = await window.api.stockPositions.getAll()
+    set({ stockPositions: updated })
+  },
+  delete: async (id) => {
+    await window.api.stockPositions.delete(id)
+    set((state) => ({ stockPositions: state.stockPositions.filter((s) => s.id !== id) }))
+  }
 }))
 
 // SavingsGoal type definition
 type SavingsGoal = {
-    id: number,
-    name: string,
-    targetAmount: number,
-    currentAmount: number,
-    targetDate: string | null
+  id: number
+  name: string
+  targetAmount: number
+  currentAmount: number
+  targetDate: string | null
 }
 
 type SavingsGoalsStore = {
-    savingsGoals: SavingsGoal[]
-    load: () => Promise<void>
-    create: (data: Omit<SavingsGoal, 'id'>) => Promise<void>
-    update: (data: SavingsGoal) => Promise<void>
-    delete: (id: number) => Promise<void>
+  savingsGoals: SavingsGoal[]
+  load: () => Promise<void>
+  create: (data: Omit<SavingsGoal, 'id'>) => Promise<void>
+  update: (data: SavingsGoal) => Promise<void>
+  delete: (id: number) => Promise<void>
 }
 
 export const useSavingsGoals = create<SavingsGoalsStore>((set) => ({
-    savingsGoals: [],
-    load: async () => {
-        const data = await window.api.savingsGoals.getAll()
-        set({ savingsGoals: data })
-    },
-    create: async (data) => {
-        await window.api.savingsGoals.create(data)
-        const updated = await window.api.savingsGoals.getAll()
-        set({ savingsGoals: updated })
-    },
-    update: async (data) => {
-        await window.api.savingsGoals.update(data)
-        const updated = await window.api.savingsGoals.getAll()
-        set({ savingsGoals: updated })
-    },
-    delete: async (id) => {
-        await window.api.savingsGoals.delete(id)
-        set((state) => ({ savingsGoals: state.savingsGoals.filter((s) => s.id !== id) }))
-    }
+  savingsGoals: [],
+  load: async () => {
+    const data = await window.api.savingsGoals.getAll()
+    set({ savingsGoals: data })
+  },
+  create: async (data) => {
+    await window.api.savingsGoals.create(data)
+    const updated = await window.api.savingsGoals.getAll()
+    set({ savingsGoals: updated })
+  },
+  update: async (data) => {
+    await window.api.savingsGoals.update(data)
+    const updated = await window.api.savingsGoals.getAll()
+    set({ savingsGoals: updated })
+  },
+  delete: async (id) => {
+    await window.api.savingsGoals.delete(id)
+    set((state) => ({ savingsGoals: state.savingsGoals.filter((s) => s.id !== id) }))
+  }
 }))
 
 // PriceSnapshot type definition
 type PriceSnapshot = {
-    id: number,
-    ticker: string,
-    price: number,
-    date: string
+  id: number
+  ticker: string
+  price: number
+  date: string
 }
 
 type PriceSnapshotsStore = {
-    priceSnapshots: PriceSnapshot[]
-    load: () => Promise<void>
-    upsert: (data: Omit<PriceSnapshot, 'id'>) => Promise<void>
+  priceSnapshots: PriceSnapshot[]
+  load: () => Promise<void>
+  upsert: (data: Omit<PriceSnapshot, 'id'>) => Promise<void>
 }
 
 export const usePriceSnapshots = create<PriceSnapshotsStore>((set) => ({
-    priceSnapshots: [],
-    load: async () => {
-      const data = await window.api.priceSnapshots.getAll()
-      set({ priceSnapshots: data })
-    },
-    upsert: async (data) => {
-      await window.api.priceSnapshots.upsert(data)
-      const updated = await window.api.priceSnapshots.getAll()
-      set({ priceSnapshots: updated })
-    }
+  priceSnapshots: [],
+  load: async () => {
+    const data = await window.api.priceSnapshots.getAll()
+    set({ priceSnapshots: data })
+  },
+  upsert: async (data) => {
+    await window.api.priceSnapshots.upsert(data)
+    const updated = await window.api.priceSnapshots.getAll()
+    set({ priceSnapshots: updated })
+  }
 }))
 
 // Settings type definition
@@ -338,7 +343,9 @@ export type Settings = {
 
 // Applies the resolved theme to the document root. 'system' resolves against the OS preference.
 export function applyTheme(theme: Settings['theme']): void {
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const isDark =
+    theme === 'dark' ||
+    (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
   document.documentElement.classList.toggle('dark', isDark)
 }
 

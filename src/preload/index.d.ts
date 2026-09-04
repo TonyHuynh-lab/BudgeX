@@ -1,11 +1,47 @@
 import { ElectronAPI } from '@electron-toolkit/preload'
 
-type Account = { id: number; name: string; type: string; currency: string; openingBalance: number; closed: boolean; cashbackRate: number }
-type Transaction = { id: number; date: string; amount: number; category: string; description: string | null; accountId: number | null }
-type Subscription = { id: number; name: string; amount: number; billingCycle: string; startDate: string; category: string | null }
-type StockPosition = { id: number; ticker: string; shares: number; avgCostBasis: number; purchaseDate: string; currentPrice: number; accountId: number | null }
+type Account = {
+  id: number
+  name: string
+  type: string
+  currency: string
+  openingBalance: number
+  closed: boolean
+  cashbackRate: number
+}
+type Transaction = {
+  id: number
+  date: string
+  amount: number
+  category: string
+  description: string | null
+  accountId: number | null
+}
+type Subscription = {
+  id: number
+  name: string
+  amount: number
+  billingCycle: string
+  startDate: string
+  category: string | null
+}
+type StockPosition = {
+  id: number
+  ticker: string
+  shares: number
+  avgCostBasis: number
+  purchaseDate: string
+  currentPrice: number
+  accountId: number | null
+}
 type InvestmentAccount = { id: number; name: string; type: string }
-type SavingsGoal = { id: number; name: string; targetAmount: number; currentAmount: number; targetDate: string | null }
+type SavingsGoal = {
+  id: number
+  name: string
+  targetAmount: number
+  currentAmount: number
+  targetDate: string | null
+}
 type PriceSnapshot = { id: number; ticker: string; price: number; date: string }
 type CashbackRate = { id: number; accountId: number; category: string; rate: number }
 type Settings = { id: number; theme: 'light' | 'dark' | 'system'; currency: string }

@@ -49,7 +49,7 @@ const api = {
     delete: (id) => ipcRenderer.invoke('cashbackRates:delete', id)
   },
   stockPrices: {
-    fetch: (tickers: string[]) => ipcRenderer.invoke('stockPrices:fetch', tickers),
+    fetch: (tickers: string[]) => ipcRenderer.invoke('stockPrices:fetch', tickers)
   },
   settings: {
     get: () => ipcRenderer.invoke('settings:get'),
@@ -66,11 +66,10 @@ const api = {
 
 declare global {
   interface Window {
-    electron: any,
+    electron: any
     api: any
   }
-};
-
+}
 
 if (process.contextIsolated) {
   try {
@@ -83,7 +82,6 @@ if (process.contextIsolated) {
   window.electron = electronAPI
   window.api = api
 }
-
 
 // Use `contextBridge` APIs to expose Electron APIs to
 // renderer only if context isolation is enabled, otherwise

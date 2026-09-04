@@ -1,12 +1,25 @@
 import { app, dialog, ipcMain } from 'electron'
-import { eq, desc } from 'drizzle-orm'
+import { eq, ne, desc } from 'drizzle-orm'
 import { writeFileSync } from 'fs'
 import { join } from 'path'
 import { db } from '../db'
-import { accounts, transactions, subscriptions, stockPositions, savingsGoals, priceSnapshots, cashbackRates, settings, investmentAccounts } from '../db/schema'
+import {
+  accounts,
+  transactions,
+  subscriptions,
+  stockPositions,
+  savingsGoals,
+  priceSnapshots,
+  cashbackRates,
+  settings,
+  investmentAccounts
+} from '../db/schema'
 import yahooFinanceModule from 'yahoo-finance2'
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const yahooFinance = (yahooFinanceModule as any).default ?? yahooFinanceModule
+
+// The settings table holds exactly one row, addressed by this fixed id.
+const SETTINGS_ID = 1
 
 export function registerHandlers(): void {
   // Accounts
@@ -15,13 +28,15 @@ export function registerHandlers(): void {
   ipcMain.handle('accounts:update', (_, { id, ...data }) =>
     db.update(accounts).set(data).where(eq(accounts.id, id)).returning()
   )
-  ipcMain.handle('accounts:delete', (_, id) =>
-    db.delete(accounts).where(eq(accounts.id, id)).run()
-  )
+  ipcMain.handle('accounts:delete', (_, id) => db.delete(accounts).where(eq(accounts.id, id)).run())
 
   // Transactions
-  ipcMain.handle('transactions:getAll', () => db.select().from(transactions).orderBy(desc(transactions.date)))
-  ipcMain.handle('transactions:create', (_, data) => db.insert(transactions).values(data).returning())
+  ipcMain.handle('transactions:getAll', () =>
+    db.select().from(transactions).orderBy(desc(transactions.date))
+  )
+  ipcMain.handle('transactions:create', (_, data) =>
+    db.insert(transactions).values(data).returning()
+  )
   ipcMain.handle('transactions:update', (_, { id, ...data }) =>
     db.update(transactions).set(data).where(eq(transactions.id, id)).returning()
   )
@@ -31,7 +46,9 @@ export function registerHandlers(): void {
 
   // Subscriptions
   ipcMain.handle('subscriptions:getAll', () => db.select().from(subscriptions))
-  ipcMain.handle('subscriptions:create', (_, data) => db.insert(subscriptions).values(data).returning())
+  ipcMain.handle('subscriptions:create', (_, data) =>
+    db.insert(subscriptions).values(data).returning()
+  )
   ipcMain.handle('subscriptions:update', (_, { id, ...data }) =>
     db.update(subscriptions).set(data).where(eq(subscriptions.id, id)).returning()
   )
@@ -41,7 +58,9 @@ export function registerHandlers(): void {
 
   // Investment Accounts
   ipcMain.handle('investmentAccounts:getAll', () => db.select().from(investmentAccounts))
-  ipcMain.handle('investmentAccounts:create', (_, data) => db.insert(investmentAccounts).values(data).returning())
+  ipcMain.handle('investmentAccounts:create', (_, data) =>
+    db.insert(investmentAccounts).values(data).returning()
+  )
   ipcMain.handle('investmentAccounts:update', (_, { id, ...data }) =>
     db.update(investmentAccounts).set(data).where(eq(investmentAccounts.id, id)).returning()
   )
@@ -51,7 +70,9 @@ export function registerHandlers(): void {
 
   // Stock Positions
   ipcMain.handle('stockPositions:getAll', () => db.select().from(stockPositions))
-  ipcMain.handle('stockPositions:create', (_, data) => db.insert(stockPositions).values(data).returning())
+  ipcMain.handle('stockPositions:create', (_, data) =>
+    db.insert(stockPositions).values(data).returning()
+  )
   ipcMain.handle('stockPositions:update', (_, { id, ...data }) =>
     db.update(stockPositions).set(data).where(eq(stockPositions.id, id)).returning()
   )
@@ -61,7 +82,9 @@ export function registerHandlers(): void {
 
   // Savings Goals
   ipcMain.handle('savingsGoals:getAll', () => db.select().from(savingsGoals))
-  ipcMain.handle('savingsGoals:create', (_, data) => db.insert(savingsGoals).values(data).returning())
+  ipcMain.handle('savingsGoals:create', (_, data) =>
+    db.insert(savingsGoals).values(data).returning()
+  )
   ipcMain.handle('savingsGoals:update', (_, { id, ...data }) =>
     db.update(savingsGoals).set(data).where(eq(savingsGoals.id, id)).returning()
   )
@@ -71,36 +94,56 @@ export function registerHandlers(): void {
 
   // inside registerHandlers():
   ipcMain.handle('priceSnapshots:getAll', () => db.select().from(priceSnapshots))
-  ipcMain.handle('priceSnapshots:upsert', (_, data: { ticker: string; price: number; date: string }) =>
-  db.insert(priceSnapshots)
-    .values(data)
-    .onConflictDoUpdate({ target: [priceSnapshots.ticker, priceSnapshots.date], set: { price: data.price } })
-    .run()
+  ipcMain.handle(
+    'priceSnapshots:upsert',
+    (_, data: { ticker: string; price: number; date: string }) =>
+      db
+        .insert(priceSnapshots)
+        .values(data)
+        .onConflictDoUpdate({
+          target: [priceSnapshots.ticker, priceSnapshots.date],
+          set: { price: data.price }
+        })
+        .run()
   )
 
   // Cashback Rates
   ipcMain.handle('cashbackRates:getAll', () => db.select().from(cashbackRates))
-  ipcMain.handle('cashbackRates:upsert', (_, data: { accountId: number; category: string; rate: number }) =>
-    db.insert(cashbackRates)
-      .values(data)
-      .onConflictDoUpdate({ target: [cashbackRates.accountId, cashbackRates.category], set: { rate: data.rate } })
-      .run()
+  ipcMain.handle(
+    'cashbackRates:upsert',
+    (_, data: { accountId: number; category: string; rate: number }) =>
+      db
+        .insert(cashbackRates)
+        .values(data)
+        .onConflictDoUpdate({
+          target: [cashbackRates.accountId, cashbackRates.category],
+          set: { rate: data.rate }
+        })
+        .run()
   )
   ipcMain.handle('cashbackRates:delete', (_, id) =>
     db.delete(cashbackRates).where(eq(cashbackRates.id, id)).run()
   )
 
-  // Settings (single row, created on first read)
-  ipcMain.handle('settings:get', async () => {
-    const existing = await db.select().from(settings)
-    if (existing.length > 0) return existing[0]
-    const created = await db.insert(settings).values({}).returning()
-    return created[0]
+  // Settings (single row, created on first read). The row is pinned to SETTINGS_ID and
+  // seeded with an idempotent insert-or-ignore, so concurrent callers cannot each create
+  // one. Both handlers are synchronous — better-sqlite3 is a sync driver — so no await can
+  // interleave between the seed and the read, which is what previously let StrictMode's
+  // double-fired effects (Layout + Settings both calling load) insert two rows.
+  ipcMain.handle('settings:get', () => {
+    db.insert(settings).values({ id: SETTINGS_ID }).onConflictDoNothing().run()
+    // Prune duplicates left behind by the pre-fix insert race. The seed above guarantees
+    // SETTINGS_ID exists first, and autoincrement means it is the original row, so the
+    // rows removed here are only the later dead ones.
+    db.delete(settings).where(ne(settings.id, SETTINGS_ID)).run()
+    return db.select().from(settings).where(eq(settings.id, SETTINGS_ID)).get()
   })
-  ipcMain.handle('settings:update', async (_, data: { theme?: string; currency?: string }) => {
-    const existing = await db.select().from(settings)
-    if (existing.length === 0) return db.insert(settings).values(data).returning()
-    return db.update(settings).set(data).where(eq(settings.id, existing[0].id)).returning()
+  ipcMain.handle('settings:update', (_, data: { theme?: string; currency?: string }) => {
+    db.insert(settings)
+      .values({ id: SETTINGS_ID, ...data })
+      .onConflictDoNothing()
+      .run()
+    return db.update(settings).set(data).where(eq(settings.id, SETTINGS_ID)).returning().all()
   })
 
   // App info
@@ -117,17 +160,25 @@ export function registerHandlers(): void {
     })
     if (canceled || !filePath) return { canceled: true as const }
 
-    const [accountsData, transactionsData, subscriptionsData, stockPositionsData, savingsGoalsData, priceSnapshotsData, cashbackRatesData, investmentAccountsData] =
-      await Promise.all([
-        db.select().from(accounts),
-        db.select().from(transactions),
-        db.select().from(subscriptions),
-        db.select().from(stockPositions),
-        db.select().from(savingsGoals),
-        db.select().from(priceSnapshots),
-        db.select().from(cashbackRates),
-        db.select().from(investmentAccounts)
-      ])
+    const [
+      accountsData,
+      transactionsData,
+      subscriptionsData,
+      stockPositionsData,
+      savingsGoalsData,
+      priceSnapshotsData,
+      cashbackRatesData,
+      investmentAccountsData
+    ] = await Promise.all([
+      db.select().from(accounts),
+      db.select().from(transactions),
+      db.select().from(subscriptions),
+      db.select().from(stockPositions),
+      db.select().from(savingsGoals),
+      db.select().from(priceSnapshots),
+      db.select().from(cashbackRates),
+      db.select().from(investmentAccounts)
+    ])
 
     writeFileSync(
       filePath,
@@ -168,8 +219,8 @@ export function registerHandlers(): void {
     await Promise.all(
       tickers.map(async (ticker) => {
         try {
-          const yf = new yahooFinance({ suppressNotices: ['yahooSurvey'] });
-          const quote = await yf.quote(ticker);
+          const yf = new yahooFinance({ suppressNotices: ['yahooSurvey'] })
+          const quote = await yf.quote(ticker)
           if (quote.regularMarketPrice) {
             results[ticker] = quote.regularMarketPrice
           }

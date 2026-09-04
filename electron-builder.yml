@@ -1,5 +1,5 @@
-appId: com.electron.app
-productName: package.json
+appId: com.tonyhuynh.budgex
+productName: Budgex
 directories:
   buildResources: build
 files:
@@ -9,10 +9,17 @@ files:
   - '!{.eslintcache,eslint.config.mjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
   - '!{.env,.env.*,.npmrc,pnpm-lock.yaml}'
   - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+  # Migrations ship via extraResources below, not inside the asar.
+  - '!resources/migrations/**'
 asarUnpack:
   - resources/**
+# src/main/db/index.ts reads migrations from `process.resourcesPath/migrations` in a
+# packaged app, so they must be copied there verbatim rather than bundled into the asar.
+extraResources:
+  - from: resources/migrations
+    to: migrations
 win:
-  executableName: package.json
+  executableName: Budgex
 nsis:
   artifactName: ${name}-${version}-setup.${ext}
   shortcutName: ${productName}
@@ -33,11 +40,8 @@ linux:
     - AppImage
     - snap
     - deb
-  maintainer: electronjs.org
+  maintainer: Tony Huynh
   category: Utility
 appImage:
   artifactName: ${name}-${version}.${ext}
 npmRebuild: false
-publish:
-  provider: generic
-  url: https://example.com/auto-updates

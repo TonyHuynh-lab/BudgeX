@@ -1,10 +1,9 @@
 {
-  "name": "one-budget",
+  "name": "budgex",
   "version": "1.0.0",
-  "description": "An Electron application with React and TypeScript",
+  "description": "A local-first personal finance desktop app",
   "main": "./out/main/index.js",
-  "author": "example.com",
-  "homepage": "https://electron-vite.org",
+  "author": "Tony Huynh",
   "scripts": {
     "format": "prettier --write .",
     "lint": "eslint --cache .",

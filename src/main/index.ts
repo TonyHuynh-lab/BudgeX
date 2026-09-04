@@ -1,4 +1,4 @@
-import { app, shell, BrowserWindow, ipcMain } from 'electron'
+import { app, dialog, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -42,10 +42,21 @@ function createWindow(): void {
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
   // Set app user model id for windows
-  electronApp.setAppUserModelId('com.electron')
+  electronApp.setAppUserModelId('com.tonyhuynh.budgex')
 
-  // Call migrations
-  runMigrations()
+  // Call migrations. A failure here leaves the app with no usable database, so surface it
+  // instead of rejecting silently and never reaching createWindow().
+  try {
+    runMigrations()
+  } catch (error) {
+    dialog.showErrorBox(
+      'Budgex could not start',
+      `Failed to prepare the database.\n\n${error instanceof Error ? error.message : String(error)}`
+    )
+    app.quit()
+    return
+  }
+
   // Register IPC handlers
   registerHandlers()
 

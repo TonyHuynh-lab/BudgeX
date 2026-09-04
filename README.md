@@ -1,6 +1,6 @@
-# package.json
+# Budgex
 
-An Electron application with React and TypeScript
+A local-first personal finance desktop app built with Electron, React, and TypeScript.
 
 ## Recommended IDE Setup
 

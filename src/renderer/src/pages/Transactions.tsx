@@ -6,7 +6,8 @@ import {
   useSettings,
   getAccountBalance,
   getCashbackBalance,
-  CASHBACK_REDEMPTION_CATEGORY
+  CASHBACK_REDEMPTION_CATEGORY,
+  CREDIT_CARD_PAYMENT_CATEGORY
 } from '../store/index'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card'
@@ -140,14 +141,14 @@ export default function Transactions(): React.JSX.Element {
         await create({
           date: form.date,
           amount: -amount,
-          category: 'Credit Card Payment',
+          category: CREDIT_CARD_PAYMENT_CATEGORY,
           description: `Payment from ${fundingAccount?.name ?? ''}`,
           accountId: Number(form.accountId)
         })
         await create({
           date: form.date,
           amount: -amount,
-          category: 'Credit Card Payment',
+          category: CREDIT_CARD_PAYMENT_CATEGORY,
           description: `Payment to ${creditAccount?.name ?? ''}`,
           accountId: Number(form.payFrom)
         })

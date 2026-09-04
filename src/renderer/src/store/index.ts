@@ -55,6 +55,11 @@ export type Account = {
 // cashback balance, instead of a transfer from another account.
 export const CASHBACK_REDEMPTION_CATEGORY = 'Cashback Redemption'
 
+// Reserved transaction category for the two rows written when a credit card is paid from
+// another account. Both sides are transfers, not spending, so anything totalling expenses
+// must exclude them — the charge itself was already counted when it was made.
+export const CREDIT_CARD_PAYMENT_CATEGORY = 'Credit Card Payment'
+
 // For checking/savings this is the available balance (positive = cash on hand).
 // For credit accounts this is the amount owed (charges increase it, payments decrease it) —
 // callers computing a net total across mixed account types must subtract credit balances.

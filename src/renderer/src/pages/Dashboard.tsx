@@ -8,7 +8,8 @@ import {
   useCashbackRates,
   useSettings,
   getAccountBalance,
-  getCashbackBalance
+  getCashbackBalance,
+  CREDIT_CARD_PAYMENT_CATEGORY
 } from '../store/index'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/card'
 import { Progress } from '../components/ui/progress'
@@ -55,16 +56,24 @@ export default function Dashboard(): React.JSX.Element {
     const type = accountTypeById.get(t.accountId ?? -1)
     return (type === 'checking' || type === 'savings') && t.amount > 0
   }
-  const isCreditCharge = (t: { accountId: number | null; amount: number }) =>
-    accountTypeById.get(t.accountId ?? -1) === 'credit' && t.amount > 0
+  // Spending, counted exactly once. On a credit account the charge is the expense (positive
+  // = money owed); the payment that later clears it is a transfer, and so is the matching
+  // outflow from the funding account, so both payment rows are excluded rather than
+  // double-counting. Everywhere else — debit card, cash, direct debits — spending is simply
+  // a negative amount and counts on its own.
+  const isExpense = (t: { accountId: number | null; amount: number; category: string }) => {
+    const type = accountTypeById.get(t.accountId ?? -1)
+    if (type === 'credit') return t.amount > 0
+    return t.amount < 0 && t.category !== CREDIT_CARD_PAYMENT_CATEGORY
+  }
 
   const monthlyIncome = monthTransactions
     .filter(isLiquidIncome)
     .reduce((sum, t) => sum + t.amount, 0)
 
   const monthlyExpenses = monthTransactions
-    .filter(isCreditCharge)
-    .reduce((sum, t) => sum + t.amount, 0)
+    .filter(isExpense)
+    .reduce((sum, t) => sum + Math.abs(t.amount), 0)
 
   const accountsBalance = accounts
     .filter((a) => !a.closed)
@@ -105,7 +114,7 @@ export default function Dashboard(): React.JSX.Element {
     return {
       month: label,
       income: matching.filter(isLiquidIncome).reduce((sum, t) => sum + t.amount, 0),
-      expenses: matching.filter(isCreditCharge).reduce((sum, t) => sum + t.amount, 0)
+      expenses: matching.filter(isExpense).reduce((sum, t) => sum + Math.abs(t.amount), 0)
     }
   })
 
